@@ -4,8 +4,7 @@ module Tests.Decoders
 open Fable.Core
 #endif
 
-open Fable.Core.JsInterop
-open Thoth.Json
+open Thoth.Json.Net
 open Util.Testing
 open System
 

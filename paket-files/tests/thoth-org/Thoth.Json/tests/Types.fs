@@ -1,6 +1,6 @@
 module Tests.Types
 
-open Thoth.Json
+open Thoth.Json.Net
 open System.Threading
 #if !NETFRAMEWORK
 open Fable.Core

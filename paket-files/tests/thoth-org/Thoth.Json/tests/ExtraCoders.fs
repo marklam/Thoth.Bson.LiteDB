@@ -1,6 +1,6 @@
 module Tests.ExtraCoders
 
-open Thoth.Json
+open Thoth.Json.Net
 open Util.Testing
 #if !NETFRAMEWORK
 open Fable.Core

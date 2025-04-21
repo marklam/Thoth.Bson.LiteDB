@@ -1,6 +1,6 @@
 module Tests.BackAndForth
 
-open Thoth.Json
+open Thoth.Json.Net
 open Util.Testing
 open System
 open Tests.Types
