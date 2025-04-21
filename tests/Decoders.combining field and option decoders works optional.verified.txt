@@ -1,0 +1,7 @@
+﻿Error at: `$`
+Expecting an object with a field named `height` but instead got:
+{
+    "name": "maxime",
+    "age": 25,
+    "something_undefined": null
+}

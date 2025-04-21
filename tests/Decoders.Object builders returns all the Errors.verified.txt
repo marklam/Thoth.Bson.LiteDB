@@ -1,0 +1,33 @@
+﻿{
+  Case: Error,
+  Fields: [    
+The following errors were found:
+
+Error at: `$`
+Expecting an object with a field named `missing_field_1` but instead got:
+{
+    "age": 25,
+    "fieldC": "not_a_number",
+    "fieldD": {
+        "sub_field": "not_a_boolean"
+    }
+}
+
+Error at: `$.missing_field_2.sub_field`
+Expecting an object with path `missing_field_2.sub_field` but instead got:
+{
+    "age": 25,
+    "fieldC": "not_a_number",
+    "fieldD": {
+        "sub_field": "not_a_boolean"
+    }
+}
+Node `sub_field` is unkown.
+
+Error at: `$.fieldC`
+Expecting an int but instead got: "not_a_number"
+
+Error at: `$.fieldD.sub_field`
+Expecting a boolean but instead got: "not_a_boolean"
+  ]
+}

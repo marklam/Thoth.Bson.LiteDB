@@ -1,0 +1,12 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$.[5]`
+Expecting a longer array. Need index `5` but there are only `3` entries.
+[
+    "maxime",
+    "alfonso",
+    "steffen"
+]
+  ]
+}

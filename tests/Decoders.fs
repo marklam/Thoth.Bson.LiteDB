@@ -1,12 +1,12 @@
 module Tests.Decoders
 
-#if !NETFRAMEWORK
-open Fable.Core
-#endif
-
 open Thoth.Json.Net
 open Util.Testing
 open System
+open Expecto
+open VerifyExpecto
+open VerifyTests
+open Argon
 
 let jsonRecord =
     """{ "a": 1.0,
@@ -35,6 +35,8 @@ type UnionWithPrivateConstructor = private Bar of string | Baz
 type UnionWithMultipleFields = Multi of string * int * float
 
 let tests : Test =
+    VerifierSettings.AddExtraSettings(fun settings -> settings.AddFSharpConverters())
+
     testList "Thoth.Json.Decode" [
 
         testList "Errors" [
@@ -53,15 +55,11 @@ let tests : Test =
                 equal expected actual
             #endif
 
-            testCase "invalid json" <| fun _ ->
-                #if FABLE_COMPILER
-                let expected : Result<float, string> = Error "Given an invalid JSON: Unexpected token m in JSON at position 0"
-                #else
-                let expected : Result<float, string> = Error "Given an invalid JSON: Unexpected character encountered while parsing value: m. Path '', line 0, position 0."
-                #endif
+            testTask "invalid json" {
                 let actual = Decode.fromString Decode.float "maxime"
 
-                equal expected actual
+                do! Verifier.Verify("invalid json", actual).ToTask()
+            }
 
             testCase "invalid json #2 - Special case for Thoth.Json.Net" <| fun _ ->
                 // See: https://github.com/thoth-org/Thoth.Json.Net/issues/42
@@ -74,14 +72,8 @@ let tests : Test =
 
                 equal expected actual
 
-            testCase "invalid json #3 - Special case for Thoth.Json.Net" <| fun _ ->
+            testTask "invalid json #3 - Special case for Thoth.Json.Net" {
                 // See: https://github.com/thoth-org/Thoth.Json.Net/pull/48
-                #if FABLE_COMPILER
-                let expected : Result<float, string> = Error "Given an invalid JSON: Unexpected end of JSON input"
-                #else
-                let expected : Result<float, string> = Error "Given an invalid JSON: Unexpected end when reading token. Path 'Ab[1]'."
-                #endif
-
                 let incorrectJson = """
                 {
                 "Ab": [
@@ -93,7 +85,8 @@ let tests : Test =
 
                 let actual = Decode.fromString Decode.float incorrectJson
 
-                equal expected actual
+                do! Verifier.Verify("invalid json #3 - Special case for Thoth.Json.Net", actual).ToTask()
+            }
 
             testCase "user exceptions are not captured by the decoders" <| fun _ ->
                 let expected = true
@@ -214,20 +207,19 @@ Expecting a single character string but instead got: "ab"
 
                 equal expected actual
 
-            testCase "an invalid int [invalid range: too big] output an error" <| fun _ ->
-                let expected = Error("Error at: `$`\nExpecting an int but instead got: 2147483648\nReason: Value was either too large or too small for an int")
+            testTask "an invalid int [invalid range: too big] output an error" {
                 let actual =
                     Decode.fromString Decode.int "2147483648"
 
-                equal expected actual
+                do! Verifier.Verify("an invalid int [invalid range too big] output an error", actual).ToTask()
+            }
 
-
-            testCase "an invalid int [invalid range: too small] output an error" <| fun _ ->
-                let expected = Error("Error at: `$`\nExpecting an int but instead got: -2147483649\nReason: Value was either too large or too small for an int")
+            testTask "an invalid int [invalid range: too small] output an error" {
                 let actual =
                     Decode.fromString Decode.int "-2147483649"
 
-                equal expected actual
+                do! Verifier.Verify("an invalid int [invalid range too small] output an error", actual).ToTask()
+            }
 
             testCase "an int16 works from number" <| fun _ ->
                 let expected = Ok(int16 25)
@@ -814,20 +806,8 @@ Expecting a float but instead got: false
 
                 equal expected actual
 
-            testCase "tuple4 returns an error if invalid json (missing index)" <| fun _ ->
+            testTask "tuple4 returns an error if invalid json (missing index)" {
                 let json = """[1, "maxime", 2.5]"""
-                let expected =
-                    Error(
-                        """
-Error at: `$.[3]`
-Expecting a longer array. Need index `3` but there are only `3` entries.
-[
-    1,
-    "maxime",
-    2.5
-]
-                        """.Trim())
-
                 let actual =
                     Decode.fromString
                         (Decode.tuple4
@@ -836,7 +816,8 @@ Expecting a longer array. Need index `3` but there are only `3` entries.
                             Decode.float
                             SmallRecord.Decoder) json
 
-                equal expected actual
+                do! Verifier.Verify("tuple4 returns an error if invalid json (missing index)", actual).ToTask()
+            }
 
             testCase "tuple4 returns an error if invalid json (error in the nested object)" <| fun _ ->
                 let json = """[1, "maxime", 2.5, { "fieldA" : false }]"""
@@ -971,23 +952,13 @@ Expecting an int but instead got: null
 
                 equal expected actual
 
-            testCase "field output an error when field is missing" <| fun _ ->
+            testTask "field output an error when field is missing" {
                 let json = """{ "name": "maxime", "age": 25 }"""
-                let expected =
-                    Error(
-                        """
-Error at: `$`
-Expecting an object with a field named `height` but instead got:
-{
-    "name": "maxime",
-    "age": 25
-}
-                        """.Trim())
-
                 let actual =
                     Decode.fromString (Decode.field "height" Decode.float) json
 
-                equal expected actual
+                do! Verifier.Verify("field output an error when field is missing", actual).ToTask()
+            }
 
             testCase "at works" <| fun _ ->
 
@@ -999,26 +970,13 @@ Expecting an object with a field named `height` but instead got:
 
                 equal expected actual
 
-            testCase "at output an error if the path failed" <| fun _ ->
+            testTask "at output an error if the path failed" {
                 let json = """{ "user": { "name": "maxime", "age": 25 } }"""
-                let expected =
-                    Error(
-                        """
-Error at: `$.user.firstname`
-Expecting an object with path `user.firstname` but instead got:
-{
-    "user": {
-        "name": "maxime",
-        "age": 25
-    }
-}
-Node `firstname` is unkown.
-                        """.Trim())
-
                 let actual =
                     Decode.fromString (Decode.at ["user"; "firstname"] Decode.string) json
 
-                equal expected actual
+                do! Verifier.Verify("at output an error if the path failed", actual).ToTask()
+            }
 
             testCase "at output an error explaining why the value is considered invalid" <| fun _ ->
                 let json = """{ "name": null, "age": 25 }"""
@@ -1044,24 +1002,13 @@ Expecting an int but instead got: null
 
                 equal expected actual
 
-            testCase "index output an error if array is to small" <| fun _ ->
+            testTask "index output an error if array is to small" {
                 let json = """["maxime", "alfonso", "steffen"]"""
-                let expected =
-                    Error(
-                        """
-Error at: `$.[5]`
-Expecting a longer array. Need index `5` but there are only `3` entries.
-[
-    "maxime",
-    "alfonso",
-    "steffen"
-]
-                        """.Trim())
-
                 let actual =
                     Decode.fromString (Decode.index 5 Decode.string) json
 
-                equal expected actual
+                do! Verifier.Verify("index output an error if array is to small", actual).ToTask()
+            }
 
             testCase "index output an error if value isn't an array" <| fun _ ->
                 let json = "1"
@@ -1296,27 +1243,15 @@ Expecting an array but instead got: 1
                 """{"Reduced": null}""" |> Decode.fromString decoder |> equal (Ok(Reduced None))
                 """{"Zero": true}""" |> Decode.fromString decoder |> equal (Ok Zero)
 
-            testCase "oneOf output errors if all case fails" <| fun _ ->
-                let expected =
-                    Error (
-                        """
-The following errors were found:
-
-Error at: `$.[0]`
-Expecting a string but instead got: 1
-
-Error at: `$.[0]`
-Expecting an object but instead got:
-1
-                        """.Trim())
-
+            testTask "oneOf output errors if all case fails" {
                 let badInt =
                     Decode.oneOf [ Decode.string; Decode.field "test" Decode.string ]
 
                 let actual =
                     Decode.fromString (Decode.list badInt) "[1,2,null,4]"
 
-                equal expected actual
+                do! Verifier.Verify("oneOf output errors if all case fails", actual).ToTask()
+            }
 
             testCase "optional works" <| fun _ ->
                 let json = """{ "name": "maxime", "age": 25, "something_undefined": null }"""
@@ -1388,7 +1323,7 @@ Expecting a string but instead got: 12
 
                 equal expectedUndefinedField actualUndefinedField
 
-            testCase "combining field and option decoders works" <| fun _ ->
+            testTask "combining field and option decoders works" {
                 let json = """{ "name": "maxime", "age": 25, "something_undefined": null }"""
 
                 let expectedValid = Ok(Some "maxime")
@@ -1399,27 +1334,12 @@ Expecting a string but instead got: 12
 
                 match Decode.fromString (Decode.field "name" (Decode.option Decode.int)) json with
                 | Error msg ->
-                    let expected =
-                        """
-Error at: `$.name`
-Expecting an int but instead got: "maxime"
-                        """.Trim()
-                    equal expected msg
+                    do! Verifier.Verify("combining field and option decoders works name", msg).ToTask()
                 | Ok _ -> failwith "Expected type error for `name` field #1"
 
                 match Decode.fromString (Decode.field "this_field_do_not_exist" (Decode.option Decode.int)) json with
                 | Error msg ->
-                    let expected =
-                        """
-Error at: `$`
-Expecting an object with a field named `this_field_do_not_exist` but instead got:
-{
-    "name": "maxime",
-    "age": 25,
-    "something_undefined": null
-}
-                        """.Trim()
-                    equal expected msg
+                    do! Verifier.Verify("combining field and option decoders works this_field_do_not_exist", msg).ToTask()
                 | Ok _ ->
                     failwith "Expected type error for `name` field #2"
 
@@ -1437,37 +1357,17 @@ Expecting an object with a field named `this_field_do_not_exist` but instead got
 
                 match Decode.fromString (Decode.option (Decode.field "name" Decode.int)) json with
                 | Error msg ->
-                    let expected =
-                        """
-Error at: `$.name`
-Expecting an int but instead got: "maxime"
-                        """.Trim()
-                    equal expected msg
+                    do! Verifier.Verify("combining field and option decoders works option type", msg).ToTask()
                 | Ok _ -> failwith "Expected type error for `name` field #3"
 
                 match Decode.fromString (Decode.option (Decode.field "this_field_do_not_exist" Decode.int)) json with
                 | Error msg ->
-                    let expected =
-                        """
-Error at: `$`
-Expecting an object with a field named `this_field_do_not_exist` but instead got:
-{
-    "name": "maxime",
-    "age": 25,
-    "something_undefined": null
-}
-                        """.Trim()
-                    equal expected msg
+                    do! Verifier.Verify("combining field and option decoders works option this_field_do_not_exist", msg).ToTask()
                 | Ok _ -> failwith "Expected type error for `name` field #4"
 
                 match Decode.fromString (Decode.option (Decode.field "something_undefined" Decode.int)) json with
                 | Error msg ->
-                    let expected =
-                        """
-Error at: `$.something_undefined`
-Expecting an int but instead got: null
-                        """.Trim()
-                    equal expected msg
+                    do! Verifier.Verify("combining field and option decoders works option something_undefined", msg).ToTask()
                 | Ok _ -> failwith "Expected type error for `name` field"
 
                 // Alfonso: Should this test pass? We should use Decode.optional instead
@@ -1483,19 +1383,7 @@ Expecting an int but instead got: null
                 //
                 match Decode.fromString (Decode.field "height" (Decode.option Decode.int)) json with
                 | Error msg ->
-                    let expected =
-                        """
-Error at: `$`
-Expecting an object with a field named `height` but instead got:
-{
-    "name": "maxime",
-    "age": 25,
-    "something_undefined": null
-}
-                        """.Trim()
-
-                    equal expected msg
-
+                    do! Verifier.Verify("combining field and option decoders works optional", msg).ToTask()
                 | Ok _ -> failwith "Expected type error for `height` field"
 
                 let expectedUndefinedField = Ok(None)
@@ -1503,7 +1391,7 @@ Expecting an object with a field named `height` but instead got:
                     Decode.fromString (Decode.field "something_undefined" (Decode.option Decode.string)) json
 
                 equal expectedUndefinedField actualUndefinedField
-
+            }
         ]
 
         testList "Fancy decoding" [
@@ -1529,16 +1417,12 @@ Expecting an object with a field named `height` but instead got:
 
                 equal expected actual
 
-            testCase "succeed output an error if the JSON is invalid" <| fun _ ->
-                #if FABLE_COMPILER
-                let expected = Error("Given an invalid JSON: Unexpected token m in JSON at position 0")
-                #else
-                let expected = Error("Given an invalid JSON: Unexpected character encountered while parsing value: m. Path '', line 0, position 0.")
-                #endif
+            testTask "succeed output an error if the JSON is invalid" {
                 let actual =
                     Decode.fromString (Decode.succeed 7) "maxime"
 
-                equal expected actual
+                do! Verifier.Verify("succeed output an error if the JSON is invalid", actual).ToTask()
+            }
 
             testCase "fail works" <| fun _ ->
                 let msg = "Failing because it's fun"
@@ -1595,17 +1479,7 @@ Expecting an object with a field named `height` but instead got:
                 equal expected actual
 
 
-            testCase "andThen generate an error if an error occuered" <| fun _ ->
-                let expected =
-                    Error(
-                        """
-Error at: `$`
-Expecting an object with a field named `version` but instead got:
-{
-    "info": 3,
-    "data": 2
-}
-                        """.Trim())
+            testTask "andThen generate an error if an error occuered" {
                 let infoHelp version : Decoder<int> =
                     match version with
                     | 4 ->
@@ -1622,8 +1496,8 @@ Expecting an object with a field named `version` but instead got:
                 let actual =
                     Decode.fromString info """{ "info": 3, "data": 2 }"""
 
-                equal expected actual
-
+                do! Verifier.Verify("andThen generate an error if an error occuered", actual).ToTask()
+            }
 
             testCase "all works" <| fun _ ->
                 let expected = Ok [1; 2; 3]
@@ -2047,22 +1921,8 @@ Expecting an object but instead got:
 
                 equal expected actual
 
-            testCase "get.Required.At returns Error if field missing" <| fun _ ->
+            testTask "get.Required.At returns Error if field missing" {
                 let json = """{ "user": { "name": "maxime", "age": 25 } }"""
-                let expected =
-                    Error(
-                        """
-Error at: `$.user.firstname`
-Expecting an object with path `user.firstname` but instead got:
-{
-    "user": {
-        "name": "maxime",
-        "age": 25
-    }
-}
-Node `firstname` is unkown.
-                        """.Trim())
-
                 let decoder =
                     Decode.object
                         (fun get ->
@@ -2072,7 +1932,8 @@ Node `firstname` is unkown.
                 let actual =
                     Decode.fromString decoder json
 
-                equal expected actual
+                do! Verifier.Verify("get.Required.At returns Error if field missing", actual).ToTask()
+            }
 
             testCase "get.Required.At returns Error if type is incorrect" <| fun _ ->
                 let json = """{ "user": { "name": 12, "age": 25 } }"""
@@ -2147,14 +2008,8 @@ Expecting an object but instead got:
 
                 equal expected actual
 
-            testCase "get.Optional.At returns Error if type is incorrect" <| fun _ ->
+            testTask "get.Optional.At returns Error if type is incorrect" {
                 let json = """{ "user": { "name": 12, "age": 25 } }"""
-                let expected =
-                    Error(
-                        """
-Error at: `$.user.name`
-Expecting a string but instead got: 12
-                        """.Trim())
 
                 let decoder =
                     Decode.object
@@ -2165,7 +2020,8 @@ Expecting a string but instead got: 12
                 let actual =
                     Decode.fromString decoder json
 
-                equal expected actual
+                do! Verifier.Verify("get.Optional.At returns Error if type is incorrect", actual).ToTask()
+            }
 
             testCase "complex object builder works" <| fun _ ->
                 let expected =
@@ -2356,7 +2212,7 @@ Expecting an object with a field named `radius` but instead got:
 
                 equal expected actual
 
-            testCase "get.Optional.Raw returns an Error if a decoder fail" <| fun _ ->
+            testTask "get.Optional.Raw returns an Error if a decoder fail" {
                 let json = """{
     "enabled": true,
 	"shape": "invalid_shape"
@@ -2382,10 +2238,8 @@ Expecting an object with a field named `radius` but instead got:
                         decoder
                         json
 
-                let expected =
-                    Error "Error at: `$`\nThe following `failure` occurred with the decoder: Unknown shape type invalid_shape"
-
-                equal expected actual
+                do! Verifier.Verify("get.Optional.Raw returns an Error if a decoder fail", actual).ToTask()
+            }
 
             testCase "get.Optional.Raw returns an Error if the type is invalid" <| fun _ ->
                 let json = """{
@@ -2451,40 +2305,8 @@ Expecting an object with a field named `radius` but instead got:
 
                 equal expected actual
 
-            testCase "Object builders returns all the Errors" <| fun _ ->
+            testTask "Object builders returns all the Errors" {
                 let json = """{ "age": 25, "fieldC": "not_a_number", "fieldD": { "sub_field": "not_a_boolean" } }"""
-                let expected =
-                    Error(
-                        """
-The following errors were found:
-
-Error at: `$`
-Expecting an object with a field named `missing_field_1` but instead got:
-{
-    "age": 25,
-    "fieldC": "not_a_number",
-    "fieldD": {
-        "sub_field": "not_a_boolean"
-    }
-}
-
-Error at: `$.missing_field_2.sub_field`
-Expecting an object with path `missing_field_2.sub_field` but instead got:
-{
-    "age": 25,
-    "fieldC": "not_a_number",
-    "fieldD": {
-        "sub_field": "not_a_boolean"
-    }
-}
-Node `sub_field` is unkown.
-
-Error at: `$.fieldC`
-Expecting an int but instead got: "not_a_number"
-
-Error at: `$.fieldD.sub_field`
-Expecting a boolean but instead got: "not_a_boolean"
-                        """.Trim())
 
                 let decoder =
                     Decode.object (fun get ->
@@ -2499,7 +2321,8 @@ Expecting a boolean but instead got: "not_a_boolean"
                 let actual =
                     Decode.fromString decoder json
 
-                equal expected actual
+                do! Verifier.Verify("Object builders returns all the Errors", actual).ToTask()
+            }
 
             testCase "Test" <| fun _ ->
                 let json =

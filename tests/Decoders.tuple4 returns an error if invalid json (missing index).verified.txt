@@ -1,0 +1,12 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$.[3]`
+Expecting a longer array. Need index `3` but there are only `3` entries.
+[
+    1,
+    "maxime",
+    2.5
+]
+  ]
+}

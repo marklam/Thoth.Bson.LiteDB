@@ -1,0 +1,7 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$.user.name`
+Expecting a string but instead got: 12
+  ]
+}

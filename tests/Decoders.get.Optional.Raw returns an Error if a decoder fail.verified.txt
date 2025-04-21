@@ -1,0 +1,7 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$`
+The following `failure` occurred with the decoder: Unknown shape type invalid_shape
+  ]
+}

@@ -1,0 +1,7 @@
+﻿Error at: `$`
+Expecting an object with a field named `this_field_do_not_exist` but instead got:
+{
+    "name": "maxime",
+    "age": 25,
+    "something_undefined": null
+}

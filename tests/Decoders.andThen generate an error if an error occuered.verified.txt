@@ -1,0 +1,11 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$`
+Expecting an object with a field named `version` but instead got:
+{
+    "info": 3,
+    "data": 2
+}
+  ]
+}
