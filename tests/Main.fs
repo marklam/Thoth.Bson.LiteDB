@@ -3,11 +3,16 @@ module Tests.Main
 open Expecto
 open Util.Testing
 
+[<Tests>]
+let tests =
+    testList "All" [
+        Decoders.tests
+        Encoders.tests
+        BackAndForth.tests
+        ExtraCoders.tests
+    ]
+
 [<EntryPoint>]
 let main args =
-    testList "All" [ Decoders.tests
-                     Encoders.tests
-                     BackAndForth.tests
-                     ExtraCoders.tests
-                   ]
-    |> runTestsWithArgs defaultConfig args
+    tests
+    |> runTestsWithCLIArgs [] args

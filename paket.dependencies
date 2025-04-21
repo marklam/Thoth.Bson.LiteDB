@@ -4,11 +4,13 @@ source https://www.nuget.org/api/v2
 storage:none
 
 nuget FSharp.Core redirects:force
+nuget Microsoft.NET.Test.Sdk
 nuget Newtonsoft.Json >= 13.0.1 lowest_matching:true
 nuget Expecto
 nuget Fable.Core >= 3 framework: netstandard2.0
 nuget Ionide.KeepAChangelog.Tasks copy_local: true
 nuget Microsoft.SourceLink.GitHub copy_local: true
+nuget YoloDev.Expecto.TestSdk
 
 group tests
     # Get the tests from Thoth.Json repo so both project are in sync
