@@ -33,4 +33,7 @@
     <Compile Include="Extra.fs" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
+  <ItemGroup Condition="'$(VisualStudioVersion)' != ''">
+    <PackageReference Remove="Ionide.KeepAChangelog.Tasks" />
+  </ItemGroup>
 </Project>
