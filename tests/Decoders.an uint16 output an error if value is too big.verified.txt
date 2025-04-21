@@ -1,0 +1,8 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$`
+Expecting an uint16 but instead got: 65536
+Reason: Value was either too large or too small for an uint16
+  ]
+}

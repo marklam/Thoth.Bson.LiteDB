@@ -1,0 +1,7 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$.[3].fieldA`
+Expecting a string but instead got: false
+  ]
+}

@@ -1,0 +1,8 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$`
+Expecting a byte but instead got: -1
+Reason: Value was either too large or too small for a byte
+  ]
+}

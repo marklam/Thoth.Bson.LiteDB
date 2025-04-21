@@ -1,0 +1,7 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$.[2]`
+Expecting a float but instead got: false
+  ]
+}

@@ -1,0 +1,7 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$`
+Expecting a datetimeoffset but instead got: "NOT A DATETIMEOFFSET"
+  ]
+}

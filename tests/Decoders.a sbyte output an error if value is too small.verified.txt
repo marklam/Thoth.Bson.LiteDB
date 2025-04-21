@@ -1,0 +1,8 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$`
+Expecting a sbyte but instead got: -129
+Reason: Value was either too large or too small for a sbyte
+  ]
+}

@@ -1,0 +1,7 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$`
+Expecting a boolean but instead got: 2
+  ]
+}

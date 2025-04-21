@@ -1,0 +1,7 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$.a`
+Expecting a float but instead got: "invalid_a_field"
+  ]
+}

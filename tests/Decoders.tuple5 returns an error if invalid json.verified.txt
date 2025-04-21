@@ -1,0 +1,7 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$.[4]`
+Expecting a datetime but instead got: false
+  ]
+}

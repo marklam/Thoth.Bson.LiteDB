@@ -1,0 +1,8 @@
+﻿{
+  Case: Error,
+  Fields: [    
+Error at: `$`
+Expecting an int16 but instead got: 32768
+Reason: Value was either too large or too small for an int16
+  ]
+}
