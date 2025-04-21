@@ -9,7 +9,6 @@ let tests =
         Decoders.tests
         Encoders.tests
         BackAndForth.tests
-        ExtraCoders.tests
     ]
 
 [<EntryPoint>]

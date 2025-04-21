@@ -5,6 +5,7 @@ storage:none
 
 nuget Argon.FSharp
 nuget FSharp.Core redirects:force
+nuget LiteDB
 nuget Microsoft.NET.Test.Sdk
 nuget Newtonsoft.Json >= 13.0.1 lowest_matching:true
 nuget Expecto

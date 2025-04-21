@@ -1,0 +1,9 @@
+﻿{
+    "firstname": "maxime",
+    "age": 25,
+    "address": 
+    {
+        "street": "main road",
+        "city": "Bordeaux"
+    }
+}

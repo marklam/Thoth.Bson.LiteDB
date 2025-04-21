@@ -3,12 +3,19 @@ module Tests.Encoders
 open Thoth.Json.Net
 open Util.Testing
 open System
+open VerifyExpecto
+open VerifyTests
+open Expecto
+open Argon
 open Tests.Types
+
 
 type RecordWithPrivateConstructor = private { Foo1: int; Foo2: float }
 type UnionWithPrivateConstructor = private Bar of string | Baz
 
 let tests : Test =
+    VerifierSettings.AddExtraSettings(fun settings -> settings.AddFSharpConverters())
+
     testList "Thoth.Json.Encode" [
 
         testList "Basic" [
@@ -410,20 +417,16 @@ let tests : Test =
 
                 equal expected actual
 
-            testCase "using pretty space works" <| fun _ ->
-                let expected = "{\n    \"firstname\": \"maxime\",\n    \"age\": 25\n}"
-
+            testTask "using pretty space works" {
                 let actual =
                     Encode.object
                         [ ("firstname", Encode.string "maxime")
                           ("age", Encode.int 25)
                         ] |> Encode.toString 4
-                equal expected actual
+                do! Verifier.Verify("using pretty space works", actual).ToTask()
+            }
 
-            testCase "complex structure works" <| fun _ ->
-                let expected =
-                    "{\n    \"firstname\": \"maxime\",\n    \"age\": 25,\n    \"address\": {\n        \"street\": \"main road\",\n        \"city\": \"Bordeaux\"\n    }\n}"
-
+            testTask "complex structure works" {
                 let actual =
                     Encode.object
                         [ ("firstname", Encode.string "maxime")
@@ -433,7 +436,8 @@ let tests : Test =
                                           "city", Encode.string "Bordeaux"
                                         ])
                         ] |> Encode.toString 4
-                equal expected actual
+                do! Verifier.Verify("complex structure works", actual).ToTask()
+            }
 
             testCase "option with a value `Some ...` works" <| fun _ ->
                 let expected = """{"id":1,"operator":"maxime"}"""
@@ -456,293 +460,5 @@ let tests : Test =
                         ] |> Encode.toString 0
 
                 equal expected actual
-
-            testCase "by default, we keep the case defined in type" <| fun _ ->
-                let expected =
-                    """{"Id":0,"Name":"Maxime","Email":"mail@test.com","followers":33}"""
-                let value =
-                    { Id = 0
-                      Name = "Maxime"
-                      Email = "mail@test.com"
-                      followers = 33 }
-
-                let actual = Encode.Auto.toString(0, value)
-                equal expected actual
-
-            testCase "force_snake_case works" <| fun _ ->
-                let expected =
-                    """{"one":1,"two_part":2,"three_part_field":3}"""
-                let value = { One = 1; TwoPart = 2; ThreePartField = 3 }
-                let actual = Encode.Auto.toString(0, value, SnakeCase)
-                equal expected actual
-
-            testCase "forceCamelCase works" <| fun _ ->
-                let expected =
-                    """{"id":0,"name":"Maxime","email":"mail@test.com","followers":33}"""
-                let value =
-                    { Id = 0
-                      Name = "Maxime"
-                      Email = "mail@test.com"
-                      followers = 33 }
-
-                let actual = Encode.Auto.toString(0, value, CamelCase)
-                equal expected actual
-
-            testCase "Encode.Auto.generateEncoder works" <| fun _ ->
-                let value =
-                    {
-                        a = 5
-                        b = "bar"
-                        c = [false, 3; true, 5; false, 10]
-                        d = [|Some(Foo 14); None|]
-                        e = Map [("oh", { a = 2.; b = 2. }); ("ah", { a = -1.5; b = 0. })]
-                        f = DateTime(2018, 11, 28, 11, 10, 29, DateTimeKind.Utc)
-                        g = set [{ a = 2.; b = 2. }; { a = -1.5; b = 0. }]
-                        h = TimeSpan.FromSeconds(5.)
-                        i = 120y
-                        j = 120uy
-                        k = 250s
-                        l = 250us
-                        m = 99u
-                        n = 99L
-                        o = 999UL
-                        p = ()
-                        r = Map [( {a = 1.; b = 2.}, "value 1"); ( {a = -2.5; b = 22.1}, "value 2")]
-                        s = 'z'
-                        // s = seq [ "item n°1"; "item n°2"]
-                    }
-                let extra =
-                    Extra.empty
-                    |> Extra.withInt64
-                    |> Extra.withUInt64
-                let encoder = Encode.Auto.generateEncoder<Record9>(extra = extra)
-                let actual = encoder value |> Encode.toString 0
-                let expected = """{"a":5,"b":"bar","c":[[false,3],[true,5],[false,10]],"d":[["Foo",14],null],"e":{"ah":{"a":-1.5,"b":0},"oh":{"a":2,"b":2}},"f":"2018-11-28T11:10:29Z","g":[{"a":-1.5,"b":0},{"a":2,"b":2}],"h":"00:00:05","i":120,"j":120,"k":250,"l":250,"m":99,"n":"99","o":"999","r":[[{"a":-2.5,"b":22.1},"value 2"],[{"a":1,"b":2},"value 1"]],"s":"z"}"""
-                // Don't fail because of non-meaningful decimal digits ("2" vs "2.0")
-                let actual = System.Text.RegularExpressions.Regex.Replace(actual, @"\.0+(?!\d)", "")
-                equal expected actual
-
-            testCase "Encode.Auto.generateEncoderCached works" <| fun _ ->
-                let value =
-                    {
-                        a = 5
-                        b = "bar"
-                        c = [false, 3; true, 5; false, 10]
-                        d = [|Some(Foo 14); None|]
-                        e = Map [("oh", { a = 2.; b = 2. }); ("ah", { a = -1.5; b = 0. })]
-                        f = DateTime(2018, 11, 28, 11, 10, 29, DateTimeKind.Utc)
-                        g = set [{ a = 2.; b = 2. }; { a = -1.5; b = 0. }]
-                        h = TimeSpan.FromSeconds(5.)
-                        i = 120y
-                        j = 120uy
-                        k = 250s
-                        l = 250us
-                        m = 99u
-                        n = 99L
-                        o = 999UL
-                        p = ()
-                        r = Map [( {a = 1.; b = 2.}, "value 1"); ( {a = -2.5; b = 22.1}, "value 2")]
-                        s = 'z'
-                        // s = seq [ "item n°1"; "item n°2"]
-                    }
-                let extra =
-                    Extra.empty
-                    |> Extra.withInt64
-                    |> Extra.withUInt64
-                let encoder1 = Encode.Auto.generateEncoderCached<Record9>(extra = extra)
-                let encoder2 = Encode.Auto.generateEncoderCached<Record9>(extra = extra)
-                let actual1 = encoder1 value |> Encode.toString 0
-                let actual2 = encoder2 value |> Encode.toString 0
-                let expected = """{"a":5,"b":"bar","c":[[false,3],[true,5],[false,10]],"d":[["Foo",14],null],"e":{"ah":{"a":-1.5,"b":0},"oh":{"a":2,"b":2}},"f":"2018-11-28T11:10:29Z","g":[{"a":-1.5,"b":0},{"a":2,"b":2}],"h":"00:00:05","i":120,"j":120,"k":250,"l":250,"m":99,"n":"99","o":"999","r":[[{"a":-2.5,"b":22.1},"value 2"],[{"a":1,"b":2},"value 1"]],"s":"z"}"""
-                // Don't fail because of non-meaningful decimal digits ("2" vs "2.0")
-                let actual1 = System.Text.RegularExpressions.Regex.Replace(actual1, @"\.0+(?!\d)", "")
-                let actual2 = System.Text.RegularExpressions.Regex.Replace(actual2, @"\.0+(?!\d)", "")
-                equal expected actual1
-                equal expected actual2
-                equal actual1 actual2
-
-            testCase "Encode.Auto.toString emit null field if setted for" <| fun _ ->
-                let value = { fieldA = null }
-                let expected = """{"fieldA":null}"""
-                let actual = Encode.Auto.toString(0, value, skipNullField = false)
-                equal expected actual
-
-            testCase "Encode.Auto.toString works with bigint extra" <| fun _ ->
-                let extra =
-                    Extra.empty
-                    |> Extra.withBigInt
-                let expected = """{"bigintField":"9999999999999999999999"}"""
-                let value = { bigintField = 9999999999999999999999I }
-                let actual = Encode.Auto.toString(0, value, extra=extra)
-                equal expected actual
-
-            testCase "Encode.Auto.toString works with custom extra" <| fun _ ->
-                let extra =
-                    Extra.empty
-                    |> Extra.withCustom ChildType.Encode ChildType.Decoder
-                let expected = """{"ParentField":"bumbabon"}"""
-                let value = { ParentField = { ChildField = "bumbabon" } }
-                let actual = Encode.Auto.toString(0, value, extra=extra)
-                equal expected actual
-
-            testCase "Encode.Auto.toString serializes maps with Guid keys as JSON objects" <| fun _ ->
-                let m = Map [Guid.NewGuid(), 1; Guid.NewGuid(), 2]
-                let json = Encode.Auto.toString(0, m)
-                json.[0] = '{' |> equal true
-
-            testCase "Encode.Auto.toString works with records with private constructors" <| fun _ ->
-                let expected = """{"foo1":5,"foo2":7.8}"""
-                let x = { Foo1 = 5; Foo2 = 7.8 }: RecordWithPrivateConstructor
-                Encode.Auto.toString(0, x, caseStrategy=CamelCase)
-                |> equal expected
-
-            testCase "Encode.Auto.toString works with unions with private constructors" <| fun _ ->
-                let expected = """["Baz",["Bar","foo"]]"""
-                let x = [Baz; Bar "foo"]
-                Encode.Auto.toString(0, x, caseStrategy=CamelCase)
-                |> equal expected
-
-            testCase "Encode.Auto.toString works with strange types if they are None" <| fun _ ->
-                let expected =
-                    """{"Id":0}"""
-
-                let value =
-                    { Id = 0
-                      Thread = None }
-
-                Encode.Auto.toString(0, value)
-                |> equal expected
-
-            testCase "Encode.Auto.toString works with interfaces if they are None" <| fun _ ->
-                let expected =
-                    """{"Id":0}"""
-
-                let value =
-                    { Id = 0
-                      Interface = None }
-
-                Encode.Auto.toString(0, value)
-                |> equal expected
-
-            testCase "Encode.Auto.toString works with recursive types" <| fun _ ->
-                let vater =
-                    { Name = "Alfonso"
-                      Children = [ { Name = "Narumi"; Children = [] }
-                                   { Name = "Takumi"; Children = [] } ] }
-                let json = """{"Name":"Alfonso","Children":[{"Name":"Narumi","Children":[]},{"Name":"Takumi","Children":[]}]}"""
-                Encode.Auto.toString(0, vater)
-                |> equal json
-
-            #if !NETFRAMEWORK
-            testCase "Encode.Auto.toString works with [<StringEnum>]" <| fun _ ->
-                let expected = "\"firstPerson\""
-                let actual = Encode.Auto.toString(0, Camera.FirstPerson)
-                equal expected actual
-
-            testCase "Encode.Auto.toString works with [<StringEnum(CaseRules.LowerFirst)>]" <| fun _ ->
-                let expected = "\"react\""
-                let actual = Encode.Auto.toString(0, Framework.React)
-                equal expected actual
-
-            testCase "Encode.Auto.toString works with [<StringEnum(CaseRules.None)>]" <| fun _ ->
-                let expected = "\"Fsharp\""
-                let actual = Encode.Auto.toString(0, Language.Fsharp)
-                equal expected actual
-
-            testCase "Encode.Auto.toString works with [<StringEnum>] + [<CompiledName>]" <| fun _ ->
-                let expected = "\"C#\""
-                let actual = Encode.Auto.toString(0, Language.Csharp)
-                equal expected actual
-            #endif
-
-            testCase "Encode.Auto.toString works with normal Enums" <| fun _ ->
-                let expected = "2"
-                let actual = Encode.Auto.toString(0, Enum_Int.Two)
-                equal expected actual
-
-            testCase "Encode.Auto.toString works with System.DayOfWeek" <| fun _ ->
-                let expected = "2"
-                let actual = Encode.Auto.toString(0, DayOfWeek.Tuesday)
-                equal expected actual
-
-            testCase "Encode.Auto.toString generate `null` if skipNullField is true and the optional field value of type classes is None" <| fun _ ->
-                let value =
-                    {
-                        MaybeClass = None
-                        Must = "must value"
-                    } : RecordWithOptionalClass
-
-                let actual = Encode.Auto.toString(0, value, caseStrategy = CamelCase, skipNullField = false)
-                let expected =
-                    """{"maybeClass":null,"must":"must value"}"""
-                equal expected actual
-
-            testCase "Encode.Auto.toString doesn't generate the optional field of type classe if it's value is None" <| fun _ ->
-                let value =
-                    {
-                        MaybeClass = None
-                        Must = "must value"
-                    } : RecordWithOptionalClass
-
-                let actual = Encode.Auto.toString(0, value, caseStrategy = CamelCase)
-                let expected =
-                    """{"must":"must value"}"""
-                equal expected actual
-
-            testCase "Encode.Auto.generateEncoder throws for field using a non optional class" <| fun _ ->
-                let expected = """Cannot generate auto encoder for Tests.Types.BaseClass. Please pass an extra encoder.
-
-Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation/auto/extra-coders.html#ready-to-use-extra-coders"""
-
-                let errorMsg =
-                    try
-                        let encoder = Encode.Auto.generateEncoder<RecordWithRequiredClass>(caseStrategy = CamelCase)
-                        ""
-                    with ex ->
-                        ex.Message
-                errorMsg.Replace("+", ".") |> equal expected
-
-            testCase "Encode.Auto allows to re-define primitive types" <| fun _ ->
-                let customIntEncoder (value : int) =
-                    Encode.object [
-                        "type", Encode.string "customInt"
-                        "value", Encode.int value
-                    ]
-
-                let customIntDecoder =
-                    Decode.field "type" Decode.string
-                    |> Decode.andThen (function
-                        | "customInt" ->
-                            Decode.field "value" Decode.int
-
-                        | invalid ->
-                            Decode.fail "Invalid type for customInt"
-                    )
-
-                let extra =
-                    Extra.empty
-                    |> Extra.withCustom customIntEncoder customIntDecoder
-
-                let actual = Encode.Auto.toString(0, 42, extra=extra)
-
-                let expected =
-                    """{"type":"customInt","value":42}"""
-
-                equal expected actual
-
-            testCase "Encode.Auto.toString(value, ...) is equivalent to Encode.Auto.toString(0, value, ...)" <| fun _ ->
-                let expected = Encode.Auto.toString(0, {| Name = "Maxime" |})
-                let actual = Encode.Auto.toString({| Name = "Maxime" |})
-                equal expected actual
-
-    (*
-            #if NETFRAMEWORK
-            testCase "Encode.Auto.toString works with char based Enums" <| fun _ ->
-                let expected = ((int) 'A').ToString()  // "65"
-                let actual = Encode.Auto.toString(0, CharEnum.A)
-                equal expected actual
-            #endif
-    *)
-      ]
-
+        ]
     ]

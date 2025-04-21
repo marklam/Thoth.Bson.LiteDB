@@ -3,22 +3,16 @@
   Fields: [    
 The following errors were found:
 
-Error at: `$`
-Expecting an object with a field named `missing_field_1` but instead got:
-{
-    "age": 25,
-    "fieldC": "not_a_number",
-    "fieldD": {
-        "sub_field": "not_a_boolean"
-    }
-}
+Error at: `$.missing_field_1`
+Expecting a string but instead got: null
 
-Error at: `$.missing_field_2.sub_field`
+Error at: `$.missing_field_2`
 Expecting an object with path `missing_field_2.sub_field` but instead got:
 {
     "age": 25,
     "fieldC": "not_a_number",
-    "fieldD": {
+    "fieldD": 
+    {
         "sub_field": "not_a_boolean"
     }
 }

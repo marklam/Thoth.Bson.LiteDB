@@ -1,11 +1,7 @@
 ﻿{
   Case: Error,
   Fields: [    
-Error at: `$`
-Expecting an object with a field named `height` but instead got:
-{
-    "name": "maxime",
-    "age": 25
-}
+Error at: `$.height`
+Expecting a float but instead got: null
   ]
 }

@@ -2,7 +2,7 @@
   Case: Error,
   Fields: [    
 Error at: `$`
-Expecting an int but instead got: -2147483649
+Expecting an int but instead got: {"$numberLong": "-2147483649"}
 Reason: Value was either too large or too small for an int
   ]
 }

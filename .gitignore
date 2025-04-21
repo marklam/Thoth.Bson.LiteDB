@@ -267,3 +267,6 @@ demos/Thoth\.Elmish\.Demo/output/
 
 \.ionide/
 core.dotnet.*
+
+# Verify
+*.received.txt

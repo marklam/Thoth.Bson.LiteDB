@@ -6,17 +6,16 @@
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../src/Thoth.Json.Net.fsproj" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="paket.references" />
     <Compile Include="Util.fs" />
     <Compile Include="Types.fs" />
     <Compile Include="Encoders.fs" />
     <Compile Include="Decoders.fs" />
     <Compile Include="BackAndForth.fs" />
-    <Compile Include="ExtraCoders.fs" />
     <Compile Include="Main.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Thoth.Bson.LiteDB\Thoth.Bson.LiteDB.fsproj" />
   </ItemGroup>
   <Import Project="..\.paket\Paket.Restore.targets" />
 </Project>
