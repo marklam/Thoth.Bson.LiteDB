@@ -22,10 +22,10 @@ module Encode =
     ///**Exceptions**
     ///
     let string (value : string) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     let inline char (value : char) : JsonValue =
-        JValue(System.String(value,1)) :> JsonValue
+        JValue(System.String(value,1))
 
     ///**Description**
     /// Encode a GUID
@@ -39,7 +39,7 @@ module Encode =
     ///**Exceptions**
     ///
     let guid (value : System.Guid) : JsonValue =
-        value.ToString() |> string
+        JValue(value)
 
     ///**Description**
     /// Encode a Float. `Infinity` and `NaN` are encoded as `null`.
@@ -53,10 +53,10 @@ module Encode =
     ///**Exceptions**
     ///
     let float (value : float) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     let float32 (value : float32) : JsonValue =
-        JValue(double value) :> JsonValue
+        JValue(double value)
 
     ///**Description**
     /// Encode a Decimal.
@@ -70,7 +70,7 @@ module Encode =
     ///**Exceptions**
     ///
     let decimal (value : decimal) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     ///**Description**
     /// Encode null
@@ -83,7 +83,7 @@ module Encode =
     ///**Exceptions**
     ///
     let nil : JsonValue =
-        JValue.Null :> JsonValue
+        JValue.Null
 
     ///**Description**
     /// Encode a bool
@@ -96,7 +96,7 @@ module Encode =
     ///**Exceptions**
     ///
     let bool (value : bool) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     ///**Description**
     /// Encode an object
@@ -159,44 +159,44 @@ module Encode =
         |> object
 
     let bigint (value : bigint) : JsonValue =
-        JValue(value.ToString(CultureInfo.InvariantCulture)) :> JsonValue
+        JValue(value.ToString(CultureInfo.InvariantCulture))
 
     let datetime (value : System.DateTime) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     /// The DateTime is always encoded using UTC representation
     let datetimeOffset (value : System.DateTimeOffset) : JsonValue =
-        JValue(value.ToString("O", CultureInfo.InvariantCulture)) :> JsonValue
+        JValue(value.ToString("O", CultureInfo.InvariantCulture))
 
     let timespan (value : System.TimeSpan) : JsonValue =
-        JValue(value.ToString()) :> JsonValue
+        JValue(value.ToString())
 
     let sbyte (value : sbyte) : JsonValue =
-        JValue(int value) :> JsonValue
+        JValue(int value)
 
     let byte (value : byte) : JsonValue =
-        JValue(int value) :> JsonValue
+        JValue(int value)
 
     let int16 (value : int16) : JsonValue =
-        JValue(int value) :> JsonValue
+        JValue(int value)
 
     let uint16 (value : uint16) : JsonValue =
-        JValue(int value) :> JsonValue
+        JValue(int value)
 
     let int (value : int) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     let uint32 (value : uint32) : JsonValue =
-        JValue(int64 value) :> JsonValue
+        JValue(int64 value)
 
     let int64 (value : int64) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     let uint64 (value : uint64) : JsonValue =
-        JValue(System.Decimal value) :> JsonValue
+        JValue(System.Decimal value)
 
     let unit () : JsonValue =
-        JValue.Null :> JsonValue
+        JValue.Null
 
     let tuple2
             (enc1 : Encoder<'T1>)

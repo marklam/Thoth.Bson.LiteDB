@@ -304,14 +304,8 @@ type Enum_UInt32 =
     | Zero = 0u
     | NinetyNine = 99u
 
-#if FABLE_COMPILER
-type NoAlloc = Fable.Core.EraseAttribute
-#else
-type NoAlloc = StructAttribute
-#endif
-
-[<NoAlloc>]
-type NoAllocAttributeId = NoAllocAttributeId of System.Guid
+[<Struct>]
+type StructAttributeId = StructAttributeId of System.Guid
 
 type TestStringWithHTML =
     {
