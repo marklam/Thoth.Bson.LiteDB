@@ -1,11 +1,12 @@
 namespace Thoth.Json.Net
 
+
 [<RequireQualifiedAccess>]
 module Decode =
 
+    open System
     open System.Globalization
     open LiteDB
-    open System.IO
 
     type JTokenType = LiteDB.BsonType
     module Helpers =
@@ -13,7 +14,6 @@ module Decode =
             if isNull token then "null"
             else
                 LiteDB.JsonSerializer.Serialize(token, true)
-
 
         let inline getField (fieldName: string) (token: JsonValue) = token.Item(fieldName)
         let inline isBool (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Boolean
@@ -187,61 +187,106 @@ module Decode =
             else
                 (path, BadPrimitive("null", value)) |> Error
 
-    let sbyte : Decoder<sbyte> =
-        fun path value ->
-            if Helpers.isInteger value then
-                value.AsInt32 |> sbyte |> Ok
-            else
-                (path, BadPrimitive("an sbyte", value)) |> Error
+    let inline private integral
+                    (name : string)
+                    (tryDecode : JsonValue -> 'U option)
+                    (tryParse : (string -> bool * 'T))
+                    (min : 'U)
+                    (max : 'U)
+                    (conv : 'U -> 'T) : Decoder< 'T > =
 
-    let byte : Decoder<byte> =
-        fun path value ->
-            if Helpers.isInteger value then
-                value.AsInt32 |> byte |> Ok
-            else
-                (path, BadPrimitive("an byte", value)) |> Error
-
-    let int16 : Decoder<int16> =
-        fun path value ->
-            if Helpers.isInteger value then
-                value.AsInt32 |> int16 |> Ok
-            else
-                (path, BadPrimitive("an int16", value)) |> Error
-
-    let uint16 : Decoder<uint16> =
-        fun path value ->
-            if Helpers.isInteger value then
-                value.AsInt32 |> uint16 |> Ok
-            else
-                (path, BadPrimitive("an uint16", value)) |> Error
-
-    let int : Decoder<int> =
-        fun path value ->
-            if Helpers.isInteger value then
-                value.AsInt32 |> Ok
-            else
-                (path, BadPrimitive("an int", value)) |> Error
-
-    let uint32 : Decoder<uint32> =
-        fun path value ->
-            if Helpers.isInteger value then
-                value.AsInt64 |> uint32 |> Ok
-            else
-                (path, BadPrimitive("an uint32", value)) |> Error
-
-    let int64 : Decoder<int64> =
-        fun path value ->
-            if Helpers.isInteger value then
-                value.AsInt64 |> Ok
-            else
-                (path, BadPrimitive("an int64", value)) |> Error
-
-    let uint64 : Decoder<uint64> =
         fun path value ->
             if Helpers.isNumber value then
-                value.AsDecimal |> uint64 |> Ok
+                try
+                    match tryDecode value with
+                    | Some fValue ->
+                        if min <= fValue && fValue <= max then
+                                Ok(conv fValue)
+                        else
+                            (path, BadPrimitiveExtra(name, value, "Value was either too large or too small for " + name)) |> Error
+                    | None ->
+                        (path, BadPrimitiveExtra(name, value, "Value is not an integral value")) |> Error
+                with | :? OverflowException ->
+                    (path, BadPrimitiveExtra(name, value, "Value was either too large or too small for " + name)) |> Error
+            elif Helpers.isString value then
+                match tryParse (Helpers.asString value) with
+                | true, x -> Ok x
+                | _ -> (path, BadPrimitive(name, value)) |> Error
             else
-                (path, BadPrimitive("an uint64", value)) |> Error
+                (path, BadPrimitive(name, value)) |> Error
+
+    let sbyte : Decoder<sbyte> =
+        integral
+            "a sbyte"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
+            System.SByte.TryParse
+            (int System.SByte.MinValue)
+            (int System.SByte.MaxValue)
+            sbyte
+
+    /// Alias to Decode.uint8
+    let byte : Decoder<byte> =
+        integral
+            "a byte"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
+            System.Byte.TryParse
+            (int System.Byte.MinValue)
+            (int System.Byte.MaxValue)
+            byte
+
+    let int16 : Decoder<int16> =
+        integral
+            "an int16"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
+            System.Int16.TryParse
+            (int System.Int16.MinValue)
+            (int System.Int16.MaxValue)
+            int16
+
+    let uint16 : Decoder<uint16> =
+        integral
+            "an uint16"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
+            System.UInt16.TryParse
+            (int System.UInt16.MinValue)
+            (int System.UInt16.MaxValue)
+            uint16
+
+    let int : Decoder<int> =
+        integral
+            "an int"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
+            System.Int32.TryParse
+            System.Int32.MinValue
+            System.Int32.MaxValue
+            int
+
+    let uint32 : Decoder<uint32> =
+        integral
+            "an uint32"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt64 x) else None)
+            System.UInt32.TryParse
+            (int64 System.UInt32.MinValue)
+            (int64 System.UInt32.MaxValue)
+            uint32
+
+    let int64 : Decoder<int64> =
+        integral
+            "an int64"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt64 x) else None)
+            System.Int64.TryParse
+            System.Int64.MinValue
+            System.Int64.MaxValue
+            int64
+
+    let uint64 : Decoder<uint64> =
+        integral
+            "an uint64"
+            (fun x -> if Helpers.isNumber x then Some (Helpers.asDecimal x) else None)
+            System.UInt64.TryParse
+            (decimal System.UInt64.MinValue)
+            (decimal System.UInt64.MaxValue)
+            uint64
 
     let bigint : Decoder<bigint> =
         fun path token ->
@@ -298,7 +343,7 @@ module Decode =
             else
                 (path, BadPrimitive("a datetime", token)) |> Error
 
-    /// Decode a System.DateTime value 
+    /// Decode a System.DateTime value
     let datetimeUtc : Decoder<System.DateTime> =
         fun path token ->
             if Helpers.isDate token then
