@@ -167,14 +167,19 @@ let tests : Test =
                 equal expected actual
 
             testCase "a datetime works" <| fun _ ->
-                #if FABLE_COMPILER
-                let expected = "\"2018-10-01T11:12:55.000Z\""
-                #else
-                let expected = "\"2018-10-01T11:12:55.0000000Z\""
-                #endif
+                let expected = "{\"$date\":\"2018-10-01T11:12:55.0000000Z\"}"
                 let actual =
                     DateTime(2018, 10, 1, 11, 12, 55, DateTimeKind.Utc)
-                    |> Encode.datetime
+                    |> Encode.datetimeUtc
+                    |> Encode.toString 0
+
+                equal expected actual
+
+            testCase "a datetime with offset works (only in UTC+1)" <| fun _ ->
+                let expected = "{\"$date\":\"2018-10-01T10:12:55.0000000Z\"}"
+                let actual =
+                    DateTime(2018, 10, 1, 11, 12, 55, DateTimeKind.Local)
+                    |> Encode.datetimeUtc
                     |> Encode.toString 0
 
                 equal expected actual
@@ -202,7 +207,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "a decimal works" <| fun _ ->
-                let expected = "\"0.7833\""
+                let expected = "{\"$numberDecimal\":\"0.7833\"}"
                 let actual =
                     0.7833M
                     |> Encode.decimal
@@ -211,7 +216,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "a guid works" <| fun _ ->
-                let expected = "\"1e5dee25-8558-4392-a9fb-aae03f81068f\""
+                let expected = "{\"$guid\":\"1e5dee25-8558-4392-a9fb-aae03f81068f\"}"
                 let actual =
                     Guid.Parse("1e5dee25-8558-4392-a9fb-aae03f81068f")
                     |> Encode.guid
@@ -256,7 +261,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "an int64 works" <| fun _ ->
-                let expected = "\"7923209\""
+                let expected = "{\"$numberLong\":\"7923209\"}"
                 let actual =
                     7923209L
                     |> Encode.int64
@@ -265,7 +270,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "an uint64 works" <| fun _ ->
-                let expected = "\"7923209\""
+                let expected = "{\"$numberDecimal\":\"7923209\"}"
                 let actual =
                     7923209UL
                     |> Encode.uint64
@@ -295,7 +300,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "an enum<uint32> works" <| fun _ ->
-                let expected = "99"
+                let expected = "{\"$numberLong\":\"99\"}"
                 let actual =
                     Encode.toString 0 (Encode.Enum.uint32 Enum_UInt32.NinetyNine)
 
@@ -355,7 +360,7 @@ let tests : Test =
                 #if FABLE_COMPILER
                 let expected = """[1,"maxime",2.5,{"fieldA":"test"},"2018-10-01T11:12:55.000Z"]"""
                 #else
-                let expected = """[1,"maxime",2.5,{"fieldA":"test"},"2018-10-01T11:12:55.0000000Z"]"""
+                let expected = """[1,"maxime",2.5,{"fieldA":"test"},{"$date":"2018-10-01T11:12:55.0000000Z"}]"""
                 #endif
                 let actual =
                     Encode.tuple5
@@ -363,7 +368,7 @@ let tests : Test =
                         Encode.string
                         Encode.float
                         SmallRecord.Encoder
-                        Encode.datetime
+                        Encode.datetimeUtc
                         (1, "maxime", 2.5, { fieldA = "test" }, DateTime(2018, 10, 1, 11, 12, 55, DateTimeKind.Utc))
                     |> Encode.toString 0
 

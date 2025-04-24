@@ -161,8 +161,8 @@ module Encode =
     let bigint (value : bigint) : JsonValue =
         JValue(value.ToString(CultureInfo.InvariantCulture))
 
-    let datetime (value : System.DateTime) : JsonValue =
-        JValue(value)
+    let datetimeUtc (value : System.DateTime) : JsonValue =
+        JValue(value.ToUniversalTime())
 
     /// The DateTime is always encoded using UTC representation
     let datetimeOffset (value : System.DateTimeOffset) : JsonValue =

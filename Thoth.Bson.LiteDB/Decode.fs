@@ -18,7 +18,6 @@ module Decode =
         let inline getField (fieldName: string) (token: JsonValue) = token.Item(fieldName)
         let inline isBool (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Boolean
         let inline isNumber (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Decimal || token.Type = JTokenType.Double || token.Type = JTokenType.Int32  || token.Type = JTokenType.Int64)
-        let inline isIntegralValue (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Int32 || token.Type = JTokenType.Int64)
         let inline isInteger (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Int32 || token.Type = JTokenType.Int64)
         let inline isString (token: JsonValue) = not(isNull token) && token.Type = JTokenType.String
         let inline isGuid (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Guid
@@ -188,94 +187,61 @@ module Decode =
             else
                 (path, BadPrimitive("null", value)) |> Error
 
-    let inline private integral
-                    (name : string)
-                    (tryParse : (string -> bool * 'T))
-                    (min : unit -> 'T)
-                    (max : unit -> 'T)
-                    (conv : float -> 'T) : Decoder< 'T > =
-
-        fun path value ->
-            if Helpers.isNumber value then
-                if Helpers.isIntegralValue value then
-                    let fValue = Helpers.asFloat value
-                    if (float(min())) <= fValue && fValue <= (float(max())) then
-                        Ok(conv fValue)
-                    else
-                        (path, BadPrimitiveExtra(name, value, "Value was either too large or too small for " + name)) |> Error
-                else
-                    (path, BadPrimitiveExtra(name, value, "Value is not an integral value")) |> Error
-            elif Helpers.isString value then
-                match tryParse (Helpers.asString value) with
-                | true, x -> Ok x
-                | _ -> (path, BadPrimitive(name, value)) |> Error
-            else
-                (path, BadPrimitive(name, value)) |> Error
-
     let sbyte : Decoder<sbyte> =
-        integral
-            "a sbyte"
-            System.SByte.TryParse
-            (fun () -> System.SByte.MinValue)
-            (fun () -> System.SByte.MaxValue)
-            sbyte
+        fun path value ->
+            if Helpers.isInteger value then
+                value.AsInt32 |> sbyte |> Ok
+            else
+                (path, BadPrimitive("an sbyte", value)) |> Error
 
-    /// Alias to Decode.uint8
     let byte : Decoder<byte> =
-        integral
-            "a byte"
-            System.Byte.TryParse
-            (fun () -> System.Byte.MinValue)
-            (fun () -> System.Byte.MaxValue)
-            byte
+        fun path value ->
+            if Helpers.isInteger value then
+                value.AsInt32 |> byte |> Ok
+            else
+                (path, BadPrimitive("an byte", value)) |> Error
 
     let int16 : Decoder<int16> =
-        integral
-            "an int16"
-            System.Int16.TryParse
-            (fun () -> System.Int16.MinValue)
-            (fun () -> System.Int16.MaxValue)
-            int16
+        fun path value ->
+            if Helpers.isInteger value then
+                value.AsInt32 |> int16 |> Ok
+            else
+                (path, BadPrimitive("an int16", value)) |> Error
 
     let uint16 : Decoder<uint16> =
-        integral
-            "an uint16"
-            System.UInt16.TryParse
-            (fun () -> System.UInt16.MinValue)
-            (fun () -> System.UInt16.MaxValue)
-            uint16
+        fun path value ->
+            if Helpers.isInteger value then
+                value.AsInt32 |> uint16 |> Ok
+            else
+                (path, BadPrimitive("an uint16", value)) |> Error
 
     let int : Decoder<int> =
-        integral
-            "an int"
-            System.Int32.TryParse
-            (fun () -> System.Int32.MinValue)
-            (fun () -> System.Int32.MaxValue)
-            int
+        fun path value ->
+            if Helpers.isInteger value then
+                value.AsInt32 |> Ok
+            else
+                (path, BadPrimitive("an int", value)) |> Error
 
     let uint32 : Decoder<uint32> =
-        integral
-            "an uint32"
-            System.UInt32.TryParse
-            (fun () -> System.UInt32.MinValue)
-            (fun () -> System.UInt32.MaxValue)
-            uint32
+        fun path value ->
+            if Helpers.isInteger value then
+                value.AsInt64 |> uint32 |> Ok
+            else
+                (path, BadPrimitive("an uint32", value)) |> Error
 
     let int64 : Decoder<int64> =
-        integral
-            "an int64"
-            System.Int64.TryParse
-            (fun () -> System.Int64.MinValue)
-            (fun () -> System.Int64.MaxValue)
-            int64
+        fun path value ->
+            if Helpers.isInteger value then
+                value.AsInt64 |> Ok
+            else
+                (path, BadPrimitive("an int64", value)) |> Error
 
     let uint64 : Decoder<uint64> =
-        integral
-            "an uint64"
-            System.UInt64.TryParse
-            (fun () -> System.UInt64.MinValue)
-            (fun () -> System.UInt64.MaxValue)
-            uint64
+        fun path value ->
+            if Helpers.isNumber value then
+                value.AsDecimal |> uint64 |> Ok
+            else
+                (path, BadPrimitive("an uint64", value)) |> Error
 
     let bigint : Decoder<bigint> =
         fun path token ->
@@ -332,11 +298,11 @@ module Decode =
             else
                 (path, BadPrimitive("a datetime", token)) |> Error
 
-    /// Decode a System.DateTime value using Sytem.DateTime.TryParse, then convert it to UTC.
+    /// Decode a System.DateTime value 
     let datetimeUtc : Decoder<System.DateTime> =
         fun path token ->
             if Helpers.isDate token then
-                token.AsDateTime.ToUniversalTime() |> Ok
+                token.AsDateTime |> Ok
             else if Helpers.isString token then
                 match System.DateTime.TryParse (Helpers.asString token) with
                 | true, x -> x.ToUniversalTime() |> Ok
