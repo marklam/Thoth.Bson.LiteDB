@@ -140,7 +140,7 @@ let tests : Test =
                 property {
                     let! expected = GenX.auto<TestRecord>
                     let bson = TestRecord.Encode expected
-                    let actual = TestRecord.Decode "" bson
+                    let actual = TestRecord.Decode "$" bson
                     equal (Ok expected) actual
                 } |> Property.check
 
@@ -157,7 +157,7 @@ let tests : Test =
                 property {
                     let! expected = GenX.autoWith<TestDU> config
                     let bson = TestDU.Encode expected
-                    let actual = TestDU.Decode "" bson
+                    let actual = TestDU.Decode "$" bson
                     equal (Ok expected) actual
                 } |> Property.check
         ]

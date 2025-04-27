@@ -41,20 +41,6 @@ let tests : Test =
 
         testList "Errors" [
 
-            #if FABLE_COMPILER
-
-            testCase "circular structure are supported when reporting error" <| fun _ ->
-                let a = createObj [ ]
-                let b = createObj [ ]
-                a?child <- b
-                b?child <- a
-
-                let expected : Result<float, string> = Error "Error at: `$`\nExpecting a float but decoder failed. Couldn\'t report given value due to circular structure. "
-                let actual = Decode.fromValue "$" Decode.float b
-
-                equal expected actual
-            #endif
-
             testTask "invalid json" {
                 let actual = Decode.fromString Decode.float "maxime"
 

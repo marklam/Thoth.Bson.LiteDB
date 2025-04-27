@@ -185,11 +185,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "a datetimeOffset works" <| fun _ ->
-                #if FABLE_COMPILER
-                let expected = "\"2018-07-02T12:23:45.000+02:00\""
-                #else
                 let expected = "\"2018-07-02T12:23:45.0000000+02:00\""
-                #endif
                 let actual =
                     DateTimeOffset(2018, 7, 2, 12, 23, 45, 0, TimeSpan.FromHours(2.))
                     |> Encode.datetimeOffset
@@ -357,11 +353,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "a tuple5 works" <| fun _ ->
-                #if FABLE_COMPILER
-                let expected = """[1,"maxime",2.5,{"fieldA":"test"},"2018-10-01T11:12:55.000Z"]"""
-                #else
                 let expected = """[1,"maxime",2.5,{"fieldA":"test"},{"$date":"2018-10-01T11:12:55.0000000Z"}]"""
-                #endif
                 let actual =
                     Encode.tuple5
                         Encode.int
