@@ -2,6 +2,14 @@
   Case: Error,
   Fields: [    
 Error at: `$.user.firstname`
-Expecting a string but instead got: null
+Expecting an object with path `user.firstname` but instead got:
+{
+    "user": 
+    {
+        "name": "maxime",
+        "age": 25
+    }
+}
+Node `firstname` is unkown.
   ]
 }

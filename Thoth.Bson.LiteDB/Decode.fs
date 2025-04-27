@@ -15,7 +15,12 @@ module Decode =
             else
                 LiteDB.JsonSerializer.Serialize(token, true)
 
-        let inline getField (fieldName: string) (token: JsonValue) = token.Item(fieldName)
+        let inline getField (fieldName: string) (token: JsonValue) =
+            if token.AsDocument.ContainsKey fieldName then
+                token.Item(fieldName)
+            else
+                null
+
         let inline isBool (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Boolean
         let inline isNumber (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Decimal || token.Type = JTokenType.Double || token.Type = JTokenType.Int32  || token.Type = JTokenType.Int64)
         let inline isInteger (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Int32 || token.Type = JTokenType.Int64)
@@ -24,8 +29,8 @@ module Decode =
         let inline isDate (token: JsonValue) = not(isNull token) && token.Type = JTokenType.DateTime
         let inline isArray (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Array
         let inline isObject (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Document
-        let inline isUndefined (token: JsonValue) = isNull token
-        let inline isNullValue (token: JsonValue) = isNull token || token.Type = JTokenType.Null
+        let inline isUndefined (token: JsonValue) = isNull token 
+        let inline isNullValue (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Null
         let inline asBool (token: JsonValue): bool = token.AsBoolean
         let inline asInt (token: JsonValue): int = token.AsInt32
         let inline asInt64 (token: JsonValue): int64 = token.AsInt64

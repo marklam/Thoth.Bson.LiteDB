@@ -1818,7 +1818,7 @@ let tests : Test =
             testCase "get.Field.Raw works" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "circle",
+    "shape": "circle",
     "radius": 20
 }"""
                 let shapeDecoder =
@@ -1851,7 +1851,7 @@ let tests : Test =
             testTask "get.Field.Raw returns Error if a decoder fail" {
                 let json = """{
     "enabled": true,
-	"shape": "custom_shape",
+    "shape": "custom_shape",
     "radius": 20
 }"""
                 let shapeDecoder =
@@ -1881,7 +1881,7 @@ let tests : Test =
             testTask "get.Field.Raw returns Error if a field is missing in the 'raw decoder'" {
                 let json = """{
     "enabled": true,
-	"shape": "circle"
+    "shape": "circle"
 }"""
                 let shapeDecoder =
                     Decode.field "shape" Decode.string
@@ -1910,7 +1910,7 @@ let tests : Test =
             testCase "get.Optional.Raw works" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "circle",
+    "shape": "circle",
     "radius": 20
 }"""
                 let shapeDecoder =
@@ -1943,7 +1943,7 @@ let tests : Test =
             testCase "get.Optional.Raw returns None if a field is missing" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "circle"
+    "shape": "circle"
 }"""
                 let shapeDecoder =
                     Decode.field "shape" Decode.string
@@ -1975,7 +1975,7 @@ let tests : Test =
             testTask "get.Optional.Raw returns an Error if a decoder fail" {
                 let json = """{
     "enabled": true,
-	"shape": "invalid_shape"
+    "shape": "invalid_shape"
 }"""
                 let shapeDecoder =
                     Decode.field "shape" Decode.string
@@ -2004,7 +2004,7 @@ let tests : Test =
             testTask "get.Optional.Raw returns an Error if the type is invalid" {
                 let json = """{
     "enabled": true,
-	"shape": "circle",
+    "shape": "circle",
     "radius": "maxime"
 }"""
                 let shapeDecoder =
@@ -2034,7 +2034,7 @@ let tests : Test =
             testCase "get.Optional.Raw returns None if a decoder fails with null" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": null
+    "shape": null
 }"""
                 let shapeDecoder =
                     Decode.field "shape" Decode.string

@@ -1,7 +1,10 @@
 ﻿{
   Case: Error,
   Fields: [    
-Error at: `$.name`
-Expecting a string but instead got: null
+Error at: `$`
+Expecting an object with a field named `name` but instead got:
+{
+    "age": 25
+}
   ]
 }
