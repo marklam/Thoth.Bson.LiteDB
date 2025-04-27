@@ -3,14 +3,14 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Thoth.Json.Net", "src\Thoth.Json.Net.fsproj", "{4EE8D82A-9DB5-000B-8131-3FDC66C54DCF}"
-EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tests", "tests\Tests.fsproj", "{0E16816B-6E89-2E79-9A63-17976DC7BCAF}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
 	ProjectSection(SolutionItems) = preProject
 		paket.dependencies = paket.dependencies
 	EndProjectSection
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Thoth.Bson.LiteDB.Tests", "Thoth.Bson.LiteDB.Tests\Thoth.Bson.LiteDB.Tests.fsproj", "{50DA7E77-E119-7D65-1150-19D27DEE0CD8}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Thoth.Bson.LiteDB", "Thoth.Bson.LiteDB\Thoth.Bson.LiteDB.fsproj", "{B1C8CE62-A2C7-E554-33D0-14F924C1FE5E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,16 +18,19 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{4EE8D82A-9DB5-000B-8131-3FDC66C54DCF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4EE8D82A-9DB5-000B-8131-3FDC66C54DCF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4EE8D82A-9DB5-000B-8131-3FDC66C54DCF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4EE8D82A-9DB5-000B-8131-3FDC66C54DCF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0E16816B-6E89-2E79-9A63-17976DC7BCAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0E16816B-6E89-2E79-9A63-17976DC7BCAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0E16816B-6E89-2E79-9A63-17976DC7BCAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0E16816B-6E89-2E79-9A63-17976DC7BCAF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50DA7E77-E119-7D65-1150-19D27DEE0CD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50DA7E77-E119-7D65-1150-19D27DEE0CD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50DA7E77-E119-7D65-1150-19D27DEE0CD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50DA7E77-E119-7D65-1150-19D27DEE0CD8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1C8CE62-A2C7-E554-33D0-14F924C1FE5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1C8CE62-A2C7-E554-33D0-14F924C1FE5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1C8CE62-A2C7-E554-33D0-14F924C1FE5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1C8CE62-A2C7-E554-33D0-14F924C1FE5E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {81832113-2E05-4573-A3DD-1AD8235442A7}
 	EndGlobalSection
 EndGlobal
