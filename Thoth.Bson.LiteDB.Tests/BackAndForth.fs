@@ -22,6 +22,7 @@ type TestRecord =
                 "entries", value.Entries |> List.map Encode.int |> Encode.list
             ]
 
+#nowarn "0346" // GetHashCode not overridden
 type [<CustomEquality; NoComparison>] TestDU =
     | Nowt
     | String of string
