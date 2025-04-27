@@ -415,11 +415,11 @@ let tests : Test =
                         [ ("firstname", Encode.string "maxime")
                           ("age", Encode.int 25)
                         ] |> Encode.toString 4
-                equal expected actual
+                equalMultiline expected actual
 
             testCase "complex structure works" <| fun _ ->
                 let expected =
-                    "{\n    \"firstname\": \"maxime\",\n    \"age\": 25,\n    \"address\": {\n        \"street\": \"main road\",\n        \"city\": \"Bordeaux\"\n    }\n}"
+                    "{\n    \"firstname\": \"maxime\",\n    \"age\": 25,\n    \"address\":\n    {\n        \"street\": \"main road\",\n        \"city\": \"Bordeaux\"\n    }\n}"
 
                 let actual =
                     Encode.object
@@ -430,7 +430,7 @@ let tests : Test =
                                           "city", Encode.string "Bordeaux"
                                         ])
                         ] |> Encode.toString 4
-                equal expected actual
+                equalMultiline expected actual
 
             testCase "option with a value `Some ...` works" <| fun _ ->
                 let expected = """{"id":1,"operator":"maxime"}"""
