@@ -1,15 +1,13 @@
 module Tests.ExtraCoders
 
-open Thoth.Json.Net
+open Thoth.Bson.LiteDB
 open Util.Testing
-#if !NETFRAMEWORK
-open Fable.Core
-#endif
 
 type Data =
     { Id : int
       Text : string }
 
+#if NYI
 let camelCaseCoder = Extra.withCustom
                         (fun (c:Data) ->
                             Encode.object
@@ -29,16 +27,7 @@ let pascalCaseCoder = Extra.withCustom
                                 { Id = get.Required.Field "Id" Decode.int
                                   Text = get.Required.Field "Text" Decode.string }))
                         Extra.empty
-#if FABLE_COMPILER
-type CachedCoder =
-    static member inline internal encode<'Data>(data:'Data, ?caseStrategy:CaseStrategy, ?extra:ExtraCoders) =
-        let encode = Encode.Auto.generateEncoderCached<'Data>(?caseStrategy = caseStrategy, ?extra = extra)
-        encode data |> Encode.toString 0
 
-    static member inline internal decode<'Response>(value:string, ?caseStrategy:CaseStrategy, ?extra:ExtraCoders) =
-        let decoder = Decode.Auto.generateDecoderCached<'Response>(?caseStrategy = caseStrategy, ?extra = extra)
-        Decode.unsafeFromString decoder value
-#else
 type CachedCoder =
     static member internal encode<'Data>(data:'Data, ?caseStrategy:CaseStrategy, ?extra:ExtraCoders) =
         let encode = Encode.Auto.generateEncoderCached<'Data>(?caseStrategy = caseStrategy, ?extra = extra)
@@ -51,6 +40,7 @@ type CachedCoder =
 
 let tests : Test =
     testList "Thoth.Json.ExtraCoder" [
+#if NYI
         testList "Basic Tests (uncached)" [
             testCase "coder in camelCase works" <| fun _ ->
                 let data = {Id = 1; Text ="Text"}
@@ -205,4 +195,5 @@ let tests : Test =
                     CachedCoder.decode (json, caseStrategy = PascalCase)
                 equal expected actual
         ]
+#endif
     ]

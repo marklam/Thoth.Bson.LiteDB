@@ -1,8 +1,9 @@
 module Tests.BackAndForth
 
-open Thoth.Json.Net
+open Thoth.Bson.LiteDB
 open Util.Testing
 open System
+
 open Tests.Types
 
 let tests : Test =
@@ -11,7 +12,7 @@ let tests : Test =
 
         testList "StringEnum" [
 
-            #if !NETFRAMEWORK
+            #if NYI
             testCase "works with default rule" <| fun _ ->
                 let expected = FirstPerson
                 let json = Encode.Auto.toString(0, expected)

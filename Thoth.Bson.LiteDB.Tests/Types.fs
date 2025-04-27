@@ -1,10 +1,7 @@
 module Tests.Types
 
-open Thoth.Json.Net
+open Thoth.Bson.LiteDB
 open System.Threading
-#if !NETFRAMEWORK
-open Fable.Core
-#endif
 
 type Record2 =
     { a : float
@@ -282,7 +279,7 @@ type MyRecType =
     { Name: string
       Children: MyRecType List }
 
-#if !NETFRAMEWORK
+#if NYI
 [<StringEnum>]
 type Camera =
     | FirstPerson
@@ -325,13 +322,7 @@ type Enum_UInt32 =
     | Zero = 0u
     | NinetyNine = 99u
 
-#if FABLE_COMPILER
-type NoAlloc = Fable.Core.EraseAttribute
-#else
-type NoAlloc = StructAttribute
-#endif
-
-[<NoAlloc>]
+[<Struct>]
 type NoAllocAttributeId = NoAllocAttributeId of System.Guid
 
 type TestStringWithHTML =

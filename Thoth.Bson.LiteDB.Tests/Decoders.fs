@@ -1,10 +1,6 @@
 module Tests.Decoders
 
-#if !NETFRAMEWORK
-open Fable.Core
-#endif
-
-open Thoth.Json.Net
+open Thoth.Bson.LiteDB
 open Util.Testing
 open System
 
@@ -39,20 +35,6 @@ let tests : Test =
 
         testList "Errors" [
 
-            #if FABLE_COMPILER
-
-            testCase "circular structure are supported when reporting error" <| fun _ ->
-                let a = createObj [ ]
-                let b = createObj [ ]
-                a?child <- b
-                b?child <- a
-
-                let expected : Result<float, string> = Error "Error at: `$`\nExpecting a float but decoder failed. Couldn\'t report given value due to circular structure. "
-                let actual = Decode.fromValue "$" Decode.float b
-
-                equal expected actual
-            #endif
-
             testCase "invalid json" <| fun _ ->
                 #if FABLE_COMPILER
                 let expected : Result<float, string> = Error "Given an invalid JSON: Unexpected token m in JSON at position 0"
@@ -63,6 +45,7 @@ let tests : Test =
 
                 equal expected actual
 
+#if NYI
             testCase "invalid json #2 - Special case for Thoth.Json.Net" <| fun _ ->
                 // See: https://github.com/thoth-org/Thoth.Json.Net/issues/42
                 #if FABLE_COMPILER
@@ -73,6 +56,7 @@ let tests : Test =
                 let actual = Decode.Auto.fromString<MyUnion>(""""Foo","42"]""")
 
                 equal expected actual
+#endif
 
             testCase "invalid json #3 - Special case for Thoth.Json.Net" <| fun _ ->
                 // See: https://github.com/thoth-org/Thoth.Json.Net/pull/48
@@ -2055,7 +2039,8 @@ Expecting an object but instead got:
 Error at: `$.user.firstname`
 Expecting an object with path `user.firstname` but instead got:
 {
-    "user": {
+    "user":
+    {
         "name": "maxime",
         "age": 25
     }
@@ -2191,7 +2176,7 @@ Expecting a string but instead got: 12
             testCase "get.Field.Raw works" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "circle",
+    "shape": "circle",
     "radius": 20
 }"""
                 let shapeDecoder =
@@ -2224,7 +2209,7 @@ Expecting a string but instead got: 12
             testCase "get.Field.Raw returns Error if a decoder fail" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "custom_shape",
+    "shape": "custom_shape",
     "radius": 20
 }"""
                 let shapeDecoder =
@@ -2256,7 +2241,7 @@ Expecting a string but instead got: 12
             testCase "get.Field.Raw returns Error if a field is missing in the 'raw decoder'" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "circle"
+    "shape": "circle"
 }"""
                 let shapeDecoder =
                     Decode.field "shape" Decode.string
@@ -2294,7 +2279,7 @@ Expecting an object with a field named `radius` but instead got:
             testCase "get.Optional.Raw works" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "circle",
+    "shape": "circle",
     "radius": 20
 }"""
                 let shapeDecoder =
@@ -2327,7 +2312,7 @@ Expecting an object with a field named `radius` but instead got:
             testCase "get.Optional.Raw returns None if a field is missing" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "circle"
+    "shape": "circle"
 }"""
                 let shapeDecoder =
                     Decode.field "shape" Decode.string
@@ -2359,7 +2344,7 @@ Expecting an object with a field named `radius` but instead got:
             testCase "get.Optional.Raw returns an Error if a decoder fail" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "invalid_shape"
+    "shape": "invalid_shape"
 }"""
                 let shapeDecoder =
                     Decode.field "shape" Decode.string
@@ -2390,7 +2375,7 @@ Expecting an object with a field named `radius` but instead got:
             testCase "get.Optional.Raw returns an Error if the type is invalid" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": "circle",
+    "shape": "circle",
     "radius": "maxime"
 }"""
                 let shapeDecoder =
@@ -2422,7 +2407,7 @@ Expecting an object with a field named `radius` but instead got:
             testCase "get.Optional.Raw returns None if a decoder fails with null" <| fun _ ->
                 let json = """{
     "enabled": true,
-	"shape": null
+    "shape": null
 }"""
                 let shapeDecoder =
                     Decode.field "shape" Decode.string
@@ -2549,6 +2534,7 @@ Expecting a boolean but instead got: "not_a_boolean"
                 equal expected actual
         ]
 
+#if NYI
         testList "Auto" [
             testCase "Auto.Decode.fromString works" <| fun _ ->
                 let now = DateTime.Now
@@ -3176,4 +3162,5 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
                 let actual : TestStringWithHTML = Decode.Auto.unsafeFromString(articleJson)
                 equal expected actual
         ]
+#endif
     ]

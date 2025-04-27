@@ -1,45 +1,43 @@
-namespace Thoth.Json.Net
+namespace Thoth.Bson.LiteDB
 
 [<RequireQualifiedAccess>]
 module Decode =
 
+    open System
     open System.Globalization
-    open Newtonsoft.Json
-    open Newtonsoft.Json.Linq
-    open System.IO
+    open LiteDB
 
+    type JTokenType = LiteDB.BsonType
     module Helpers =
         let anyToString (token: JsonValue) : string =
             if isNull token then "null"
             else
-                use stream = new StringWriter(NewLine = "\n")
-                use jsonWriter = new JsonTextWriter(
-                                        stream,
-                                        Formatting = Formatting.Indented,
-                                        Indentation = 4 )
+                LiteDB.JsonSerializer.Serialize(token, true)
 
-                token.WriteTo(jsonWriter)
-                stream.ToString()
+        let inline getField (fieldName: string) (token: JsonValue) =
+            if token.AsDocument.ContainsKey fieldName then
+                token.Item(fieldName)
+            else
+                null
 
-        let inline getField (fieldName: string) (token: JsonValue) = token.Item(fieldName)
         let inline isBool (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Boolean
-        let inline isNumber (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Float || token.Type = JTokenType.Integer)
-        let inline isIntegralValue (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Integer)
-        let inline isInteger (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Integer)
+        let inline isNumber (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Decimal || token.Type = JTokenType.Double || token.Type = JTokenType.Int32  || token.Type = JTokenType.Int64)
+        let inline isInteger (token: JsonValue) = not(isNull token) && (token.Type = JTokenType.Int32 || token.Type = JTokenType.Int64)
         let inline isString (token: JsonValue) = not(isNull token) && token.Type = JTokenType.String
         let inline isGuid (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Guid
-        let inline isDate (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Date
+        let inline isDate (token: JsonValue) = not(isNull token) && token.Type = JTokenType.DateTime
         let inline isArray (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Array
-        let inline isObject (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Object
+        let inline isObject (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Document
         let inline isUndefined (token: JsonValue) = isNull token
-        let inline isNullValue (token: JsonValue) = isNull token || token.Type = JTokenType.Null
-        let inline asBool (token: JsonValue): bool = token.Value<bool>()
-        let inline asInt (token: JsonValue): int = token.Value<int>()
-        let inline asFloat (token: JsonValue): float = token.Value<float>()
-        let inline asFloat32 (token: JsonValue): float32 = token.Value<float32>()
-        let inline asDecimal (token: JsonValue): System.Decimal = token.Value<System.Decimal>()
-        let inline asString (token: JsonValue): string = token.Value<string>()
-        let inline asArray (token: JsonValue): JsonValue[] = token.Value<JArray>().Values() |> Seq.toArray
+        let inline isNullValue (token: JsonValue) = not(isNull token) && token.Type = JTokenType.Null
+        let inline asBool (token: JsonValue): bool = token.AsBoolean
+        let inline asInt (token: JsonValue): int = token.AsInt32
+        let inline asInt64 (token: JsonValue): int64 = token.AsInt64
+        let inline asFloat (token: JsonValue): float = token.AsDouble
+        let inline asFloat32 (token: JsonValue): float32 = token.AsDouble |> float32
+        let inline asDecimal (token: JsonValue): System.Decimal = token.AsDecimal
+        let inline asString (token: JsonValue): string = token.AsString
+        let inline asArray (token: JsonValue): JsonValue[] = token.AsArray |> Seq.toArray
 
     let private genericMsg msg value newLine =
         try
@@ -124,20 +122,13 @@ module Decode =
     let fromString (decoder : Decoder<'T>) =
         fun value ->
             try
-                let serializationSettings =
-                    new JsonSerializerSettings(
-                        DateParseHandling = DateParseHandling.None,
-                        CheckAdditionalContent = true
-                    )
 
-                let serializer = JsonSerializer.Create(serializationSettings)
 
-                use reader = new JsonTextReader(new StringReader(value))
-                let res = serializer.Deserialize<JToken>(reader)
+                let res = LiteDB.JsonSerializer.Deserialize(value:string)
 
                 fromValue "$" decoder res
             with
-                | :? JsonException as ex ->
+                | :? LiteException as ex ->
                     Error("Given an invalid JSON: " + ex.Message)
 
     /// <summary>
@@ -186,7 +177,7 @@ module Decode =
         fun path value ->
             // Using Helpers.isString fails because Json.NET directly assigns Guid type
             if Helpers.isGuid value then
-                value.Value<System.Guid>() |> Ok
+                value.AsGuid |> Ok
             elif Helpers.isString value then
                 match System.Guid.TryParse (Helpers.asString value) with
                 | true, x -> Ok x
@@ -202,21 +193,25 @@ module Decode =
 
     let inline private integral
                     (name : string)
+                    (tryDecode : JsonValue -> 'U option)
                     (tryParse : (string -> bool * 'T))
-                    (min : unit -> 'T)
-                    (max : unit -> 'T)
-                    (conv : float -> 'T) : Decoder< 'T > =
+                    (min : 'U)
+                    (max : 'U)
+                    (conv : 'U -> 'T) : Decoder< 'T > =
 
         fun path value ->
             if Helpers.isNumber value then
-                if Helpers.isIntegralValue value then
-                    let fValue = Helpers.asFloat value
-                    if (float(min())) <= fValue && fValue <= (float(max())) then
-                        Ok(conv fValue)
-                    else
-                        (path, BadPrimitiveExtra(name, value, "Value was either too large or too small for " + name)) |> Error
-                else
-                    (path, BadPrimitiveExtra(name, value, "Value is not an integral value")) |> Error
+                try
+                    match tryDecode value with
+                    | Some fValue ->
+                        if min <= fValue && fValue <= max then
+                                Ok(conv fValue)
+                        else
+                            (path, BadPrimitiveExtra(name, value, "Value was either too large or too small for " + name)) |> Error
+                    | None ->
+                        (path, BadPrimitiveExtra(name, value, "Value is not an integral value")) |> Error
+                with | :? OverflowException ->
+                    (path, BadPrimitiveExtra(name, value, "Value was either too large or too small for " + name)) |> Error
             elif Helpers.isString value then
                 match tryParse (Helpers.asString value) with
                 | true, x -> Ok x
@@ -227,66 +222,74 @@ module Decode =
     let sbyte : Decoder<sbyte> =
         integral
             "a sbyte"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
             System.SByte.TryParse
-            (fun () -> System.SByte.MinValue)
-            (fun () -> System.SByte.MaxValue)
+            (int System.SByte.MinValue)
+            (int System.SByte.MaxValue)
             sbyte
 
     /// Alias to Decode.uint8
     let byte : Decoder<byte> =
         integral
             "a byte"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
             System.Byte.TryParse
-            (fun () -> System.Byte.MinValue)
-            (fun () -> System.Byte.MaxValue)
+            (int System.Byte.MinValue)
+            (int System.Byte.MaxValue)
             byte
 
     let int16 : Decoder<int16> =
         integral
             "an int16"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
             System.Int16.TryParse
-            (fun () -> System.Int16.MinValue)
-            (fun () -> System.Int16.MaxValue)
+            (int System.Int16.MinValue)
+            (int System.Int16.MaxValue)
             int16
 
     let uint16 : Decoder<uint16> =
         integral
             "an uint16"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
             System.UInt16.TryParse
-            (fun () -> System.UInt16.MinValue)
-            (fun () -> System.UInt16.MaxValue)
+            (int System.UInt16.MinValue)
+            (int System.UInt16.MaxValue)
             uint16
 
     let int : Decoder<int> =
         integral
             "an int"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt x) else None)
             System.Int32.TryParse
-            (fun () -> System.Int32.MinValue)
-            (fun () -> System.Int32.MaxValue)
+            System.Int32.MinValue
+            System.Int32.MaxValue
             int
 
     let uint32 : Decoder<uint32> =
         integral
             "an uint32"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt64 x) else None)
             System.UInt32.TryParse
-            (fun () -> System.UInt32.MinValue)
-            (fun () -> System.UInt32.MaxValue)
+            (int64 System.UInt32.MinValue)
+            (int64 System.UInt32.MaxValue)
             uint32
 
     let int64 : Decoder<int64> =
         integral
             "an int64"
+            (fun x -> if Helpers.isInteger x then Some (Helpers.asInt64 x) else None)
             System.Int64.TryParse
-            (fun () -> System.Int64.MinValue)
-            (fun () -> System.Int64.MaxValue)
+            System.Int64.MinValue
+            System.Int64.MaxValue
             int64
 
     let uint64 : Decoder<uint64> =
         integral
             "an uint64"
+            (fun x -> if Helpers.isNumber x then Some (Helpers.asDecimal x) else None)
             System.UInt64.TryParse
-            (fun () -> System.UInt64.MinValue)
-            (fun () -> System.UInt64.MaxValue)
+            (decimal System.UInt64.MinValue)
+            (decimal System.UInt64.MaxValue)
             uint64
 
     let bigint : Decoder<bigint> =
@@ -336,7 +339,7 @@ module Decode =
     let datetime : Decoder<System.DateTime> =
         fun path token ->
             if Helpers.isDate token then
-                token.Value<System.DateTime>().ToUniversalTime() |> Ok
+                token.AsDateTime.ToUniversalTime() |> Ok
             elif Helpers.isString token then
                 match System.DateTime.TryParse (Helpers.asString token, CultureInfo.InvariantCulture, DateTimeStyles.None) with
                 | true, x -> x.ToUniversalTime() |> Ok
@@ -344,11 +347,11 @@ module Decode =
             else
                 (path, BadPrimitive("a datetime", token)) |> Error
 
-    /// Decode a System.DateTime value using Sytem.DateTime.TryParse, then convert it to UTC.
+    /// Decode a System.DateTime value
     let datetimeUtc : Decoder<System.DateTime> =
         fun path token ->
             if Helpers.isDate token then
-                token.Value<System.DateTime>().ToUniversalTime() |> Ok
+                token.AsDateTime |> Ok
             else if Helpers.isString token then
                 match System.DateTime.TryParse (Helpers.asString token) with
                 | true, x -> x.ToUniversalTime() |> Ok
@@ -360,7 +363,7 @@ module Decode =
     let datetimeLocal : Decoder<System.DateTime> =
         fun path token ->
             if Helpers.isDate token then
-                token.Value<System.DateTime>() |> Ok
+                token.AsDateTime |> Ok
             else if Helpers.isString token then
                 match System.DateTime.TryParse (Helpers.asString token) with
                 | true, x -> x |> Ok
@@ -371,7 +374,7 @@ module Decode =
     let datetimeOffset : Decoder<System.DateTimeOffset> =
         fun path token ->
             if Helpers.isDate token then
-                token.Value<System.DateTime>() |> System.DateTimeOffset |> Ok
+                token.AsDateTime |> System.DateTimeOffset |> Ok
             elif Helpers.isString token then
                 match System.DateTimeOffset.TryParse (Helpers.asString token, CultureInfo.InvariantCulture, DateTimeStyles.None) with
                 | true, x -> Ok x
@@ -381,7 +384,7 @@ module Decode =
 
     let timespan : Decoder<System.TimeSpan> =
         fun path token ->
-            if token.Type = JTokenType.TimeSpan || token.Type = JTokenType.String then
+            if token.Type = JTokenType.String then
                 match System.TimeSpan.TryParse (Helpers.asString token, CultureInfo.InvariantCulture) with
                 | true, x -> Ok x
                 | _ -> (path, BadPrimitive("a timespan", token)) |> Error
@@ -545,11 +548,8 @@ module Decode =
     let keys : Decoder<string list> =
         fun path value ->
             if Helpers.isObject value then
-                let value = value.Value<JObject>()
-                value.Properties()
-                |> Seq.map (fun prop ->
-                    prop.Name
-                )
+                let value = value.AsDocument
+                value.Keys
                 |> List.ofSeq |> Ok
             else
                 (path, BadPrimitive ("an object", value))
@@ -1060,6 +1060,7 @@ module Decode =
                 |> succeed
             )
 
+#if NYI
     //////////////////
     // Reflection ///
     ////////////////
@@ -1488,3 +1489,4 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
             match fromString decoder json with
             | Ok x -> x
             | Error msg -> failwith msg
+#endif

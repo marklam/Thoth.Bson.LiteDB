@@ -1,13 +1,14 @@
-namespace Thoth.Json.Net
+namespace Thoth.Bson.LiteDB
 
 [<RequireQualifiedAccess>]
 module Encode =
 
     open System.Globalization
     open System.Collections.Generic
-    open Newtonsoft.Json
-    open Newtonsoft.Json.Linq
+    open LiteDB
     open System.IO
+    type JValue = LiteDB.BsonValue
+    type JArray = LiteDB.BsonArray
 
     ///**Description**
     /// Encode a string
@@ -21,10 +22,10 @@ module Encode =
     ///**Exceptions**
     ///
     let string (value : string) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     let inline char (value : char) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(System.String(value,1))
 
     ///**Description**
     /// Encode a GUID
@@ -38,7 +39,7 @@ module Encode =
     ///**Exceptions**
     ///
     let guid (value : System.Guid) : JsonValue =
-        value.ToString() |> string
+        JValue(value)
 
     ///**Description**
     /// Encode a Float. `Infinity` and `NaN` are encoded as `null`.
@@ -52,10 +53,10 @@ module Encode =
     ///**Exceptions**
     ///
     let float (value : float) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     let float32 (value : float32) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(double value)
 
     ///**Description**
     /// Encode a Decimal.
@@ -69,7 +70,7 @@ module Encode =
     ///**Exceptions**
     ///
     let decimal (value : decimal) : JsonValue =
-        JValue(value.ToString(CultureInfo.InvariantCulture)) :> JsonValue
+        JValue(value)
 
     ///**Description**
     /// Encode null
@@ -82,7 +83,7 @@ module Encode =
     ///**Exceptions**
     ///
     let nil : JsonValue =
-        JValue.CreateNull() :> JsonValue
+        JValue.Null
 
     ///**Description**
     /// Encode a bool
@@ -95,7 +96,7 @@ module Encode =
     ///**Exceptions**
     ///
     let bool (value : bool) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     ///**Description**
     /// Encode an object
@@ -109,11 +110,8 @@ module Encode =
     ///**Exceptions**
     ///
     let object (values : (string * JsonValue) list) : JsonValue =
-        values
-        |> List.map (fun (key, value) ->
-            JProperty(key, value)
-        )
-        |> JObject :> JsonValue
+        BsonDocument (dict values)
+        :> JsonValue
 
     ///**Description**
     /// Encode an array
@@ -161,45 +159,44 @@ module Encode =
         |> object
 
     let bigint (value : bigint) : JsonValue =
-        JValue(value.ToString(CultureInfo.InvariantCulture)) :> JsonValue
+        JValue(value.ToString(CultureInfo.InvariantCulture))
 
-    let datetime (value : System.DateTime) : JsonValue =
-        JValue(value.ToString("O", CultureInfo.InvariantCulture)) :> JsonValue
+    let datetimeUtc (value : System.DateTime) : JsonValue =
+        JValue(value.ToUniversalTime())
 
     /// The DateTime is always encoded using UTC representation
     let datetimeOffset (value : System.DateTimeOffset) : JsonValue =
-        JValue(value.ToString("O", CultureInfo.InvariantCulture)) :> JsonValue
+        JValue(value.ToString("O", CultureInfo.InvariantCulture))
 
     let timespan (value : System.TimeSpan) : JsonValue =
-        JValue(value.ToString()) :> JsonValue
-
+        JValue(value.ToString())
 
     let sbyte (value : sbyte) : JsonValue =
-        JValue(box value) :> JsonValue
+        JValue(int value)
 
     let byte (value : byte) : JsonValue =
-        JValue(box value) :> JsonValue
+        JValue(int value)
 
     let int16 (value : int16) : JsonValue =
-        JValue(box value) :> JsonValue
+        JValue(int value)
 
     let uint16 (value : uint16) : JsonValue =
-        JValue(box value) :> JsonValue
+        JValue(int value)
 
     let int (value : int) : JsonValue =
-        JValue(value) :> JsonValue
+        JValue(value)
 
     let uint32 (value : uint32) : JsonValue =
-        JValue(box value) :> JsonValue
+        JValue(int64 value)
 
     let int64 (value : int64) : JsonValue =
-        JValue(value.ToString(CultureInfo.InvariantCulture)) :> JsonValue
+        JValue(value)
 
     let uint64 (value : uint64) : JsonValue =
-        JValue(value.ToString(CultureInfo.InvariantCulture)) :> JsonValue
+        JValue(System.Decimal value)
 
     let unit () : JsonValue =
-        JValue.CreateNull() :> JsonValue
+        JValue.Null
 
     let tuple2
             (enc1 : Encoder<'T1>)
@@ -340,16 +337,9 @@ module Encode =
     ///**Exceptions**
     ///
     let toString (space: int) (token: JsonValue) : string =
-        let format = if space = 0 then Formatting.None else Formatting.Indented
-        use stream = new StringWriter(NewLine = "\n")
-        use jsonWriter = new JsonTextWriter(
-                                stream,
-                                Formatting = format,
-                                Indentation = space )
+        LiteDB.JsonSerializer.Serialize(token, space<>0)
 
-        token.WriteTo(jsonWriter)
-        stream.ToString()
-
+#if NYI
     //////////////////
     // Reflection ///
     ////////////////
@@ -615,6 +605,8 @@ If you can't use one of these types, please pass an extra encoder.
 
         static member toString(value : 'T, ?caseStrategy : CaseStrategy, ?extra: ExtraCoders, ?skipNullField: bool) : string =
             Auto.toString(0, value, ?caseStrategy=caseStrategy, ?extra=extra, ?skipNullField=skipNullField)
+
+#endif
 
     ///**Description**
     /// Convert a `Value` into a prettified string.

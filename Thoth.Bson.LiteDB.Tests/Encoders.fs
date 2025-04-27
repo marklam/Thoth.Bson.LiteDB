@@ -1,6 +1,6 @@
 module Tests.Encoders
 
-open Thoth.Json.Net
+open Thoth.Bson.LiteDB
 open Util.Testing
 open System
 open Tests.Types
@@ -160,24 +160,25 @@ let tests : Test =
                 equal expected actual
 
             testCase "a datetime works" <| fun _ ->
-                #if FABLE_COMPILER
-                let expected = "\"2018-10-01T11:12:55.000Z\""
-                #else
-                let expected = "\"2018-10-01T11:12:55.0000000Z\""
-                #endif
+                let expected = "{\"$date\":\"2018-10-01T11:12:55.0000000Z\"}"
                 let actual =
                     DateTime(2018, 10, 1, 11, 12, 55, DateTimeKind.Utc)
-                    |> Encode.datetime
+                    |> Encode.datetimeUtc
+                    |> Encode.toString 0
+
+                equal expected actual
+
+            testCase "a datetime with offset works (only in UTC+1)" <| fun _ ->
+                let expected = "{\"$date\":\"2018-10-01T10:12:55.0000000Z\"}"
+                let actual =
+                    DateTime(2018, 10, 1, 11, 12, 55, DateTimeKind.Local)
+                    |> Encode.datetimeUtc
                     |> Encode.toString 0
 
                 equal expected actual
 
             testCase "a datetimeOffset works" <| fun _ ->
-                #if FABLE_COMPILER
-                let expected = "\"2018-07-02T12:23:45.000+02:00\""
-                #else
                 let expected = "\"2018-07-02T12:23:45.0000000+02:00\""
-                #endif
                 let actual =
                     DateTimeOffset(2018, 7, 2, 12, 23, 45, 0, TimeSpan.FromHours(2.))
                     |> Encode.datetimeOffset
@@ -195,7 +196,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "a decimal works" <| fun _ ->
-                let expected = "\"0.7833\""
+                let expected = "{\"$numberDecimal\":\"0.7833\"}"
                 let actual =
                     0.7833M
                     |> Encode.decimal
@@ -204,7 +205,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "a guid works" <| fun _ ->
-                let expected = "\"1e5dee25-8558-4392-a9fb-aae03f81068f\""
+                let expected = "{\"$guid\":\"1e5dee25-8558-4392-a9fb-aae03f81068f\"}"
                 let actual =
                     Guid.Parse("1e5dee25-8558-4392-a9fb-aae03f81068f")
                     |> Encode.guid
@@ -249,7 +250,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "an int64 works" <| fun _ ->
-                let expected = "\"7923209\""
+                let expected = "{\"$numberLong\":\"7923209\"}"
                 let actual =
                     7923209L
                     |> Encode.int64
@@ -258,7 +259,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "an uint64 works" <| fun _ ->
-                let expected = "\"7923209\""
+                let expected = "{\"$numberDecimal\":\"7923209\"}"
                 let actual =
                     7923209UL
                     |> Encode.uint64
@@ -288,7 +289,7 @@ let tests : Test =
                 equal expected actual
 
             testCase "an enum<uint32> works" <| fun _ ->
-                let expected = "99"
+                let expected = "{\"$numberLong\":\"99\"}"
                 let actual =
                     Encode.toString 0 (Encode.Enum.uint32 Enum_UInt32.NinetyNine)
 
@@ -345,18 +346,14 @@ let tests : Test =
                 equal expected actual
 
             testCase "a tuple5 works" <| fun _ ->
-                #if FABLE_COMPILER
-                let expected = """[1,"maxime",2.5,{"fieldA":"test"},"2018-10-01T11:12:55.000Z"]"""
-                #else
-                let expected = """[1,"maxime",2.5,{"fieldA":"test"},"2018-10-01T11:12:55.0000000Z"]"""
-                #endif
+                let expected = """[1,"maxime",2.5,{"fieldA":"test"},{"$date":"2018-10-01T11:12:55.0000000Z"}]"""
                 let actual =
                     Encode.tuple5
                         Encode.int
                         Encode.string
                         Encode.float
                         SmallRecord.Encoder
-                        Encode.datetime
+                        Encode.datetimeUtc
                         (1, "maxime", 2.5, { fieldA = "test" }, DateTime(2018, 10, 1, 11, 12, 55, DateTimeKind.Utc))
                     |> Encode.toString 0
 
@@ -457,6 +454,7 @@ let tests : Test =
 
                 equal expected actual
 
+#if NYI
             testCase "by default, we keep the case defined in type" <| fun _ ->
                 let expected =
                     """{"Id":0,"Name":"Maxime","Email":"mail@test.com","followers":33}"""
@@ -743,6 +741,6 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
                 equal expected actual
             #endif
     *)
+#endif
       ]
-
     ]
