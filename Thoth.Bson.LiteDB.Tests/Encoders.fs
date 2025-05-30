@@ -454,7 +454,6 @@ let tests : Test =
 
                 equalMultiline expected actual
 
-#if NYI
             testCase "by default, we keep the case defined in type" <| fun _ ->
                 let expected =
                     """{"Id":0,"Name":"Maxime","Email":"mail@test.com","followers":33}"""
@@ -515,7 +514,7 @@ let tests : Test =
                     |> Extra.withUInt64
                 let encoder = Encode.Auto.generateEncoder<Record9>(extra = extra)
                 let actual = encoder value |> Encode.toString 0
-                let expected = """{"a":5,"b":"bar","c":[[false,3],[true,5],[false,10]],"d":[["Foo",14],null],"e":{"ah":{"a":-1.5,"b":0},"oh":{"a":2,"b":2}},"f":"2018-11-28T11:10:29Z","g":[{"a":-1.5,"b":0},{"a":2,"b":2}],"h":"00:00:05","i":120,"j":120,"k":250,"l":250,"m":99,"n":"99","o":"999","r":[[{"a":-2.5,"b":22.1},"value 2"],[{"a":1,"b":2},"value 1"]],"s":"z"}"""
+                let expected = """{"a":5,"b":"bar","c":[[false,3],[true,5],[false,10]],"d":[["Foo",14],null],"e":{"ah":{"a":-1.5,"b":0},"oh":{"a":2,"b":2}},"f":{"$date":"2018-11-28T11:10:29Z"},"g":[{"a":-1.5,"b":0},{"a":2,"b":2}],"h":"00:00:05","i":120,"j":120,"k":250,"l":250,"m":{"$numberLong":"99"},"n":{"$numberLong":"99"},"o":{"$numberDecimal":"999"},"r":[[{"a":-2.5,"b":22.1},"value 2"],[{"a":1,"b":2},"value 1"]],"s":"z"}"""
                 // Don't fail because of non-meaningful decimal digits ("2" vs "2.0")
                 let actual = System.Text.RegularExpressions.Regex.Replace(actual, @"\.0+(?!\d)", "")
                 equalMultiline expected actual
@@ -551,7 +550,7 @@ let tests : Test =
                 let encoder2 = Encode.Auto.generateEncoderCached<Record9>(extra = extra)
                 let actual1 = encoder1 value |> Encode.toString 0
                 let actual2 = encoder2 value |> Encode.toString 0
-                let expected = """{"a":5,"b":"bar","c":[[false,3],[true,5],[false,10]],"d":[["Foo",14],null],"e":{"ah":{"a":-1.5,"b":0},"oh":{"a":2,"b":2}},"f":"2018-11-28T11:10:29Z","g":[{"a":-1.5,"b":0},{"a":2,"b":2}],"h":"00:00:05","i":120,"j":120,"k":250,"l":250,"m":99,"n":"99","o":"999","r":[[{"a":-2.5,"b":22.1},"value 2"],[{"a":1,"b":2},"value 1"]],"s":"z"}"""
+                let expected = """{"a":5,"b":"bar","c":[[false,3],[true,5],[false,10]],"d":[["Foo",14],null],"e":{"ah":{"a":-1.5,"b":0},"oh":{"a":2,"b":2}},"f":{"$date":"2018-11-28T11:10:29Z"},"g":[{"a":-1.5,"b":0},{"a":2,"b":2}],"h":"00:00:05","i":120,"j":120,"k":250,"l":250,"m":{"$numberLong":"99"},"n":{"$numberLong":"99"},"o":{"$numberDecimal":"999"},"r":[[{"a":-2.5,"b":22.1},"value 2"],[{"a":1,"b":2},"value 1"]],"s":"z"}"""
                 // Don't fail because of non-meaningful decimal digits ("2" vs "2.0")
                 let actual1 = System.Text.RegularExpressions.Regex.Replace(actual1, @"\.0+(?!\d)", "")
                 let actual2 = System.Text.RegularExpressions.Regex.Replace(actual2, @"\.0+(?!\d)", "")
@@ -630,28 +629,6 @@ let tests : Test =
                 let json = """{"Name":"Alfonso","Children":[{"Name":"Narumi","Children":[]},{"Name":"Takumi","Children":[]}]}"""
                 Encode.Auto.toString(0, vater)
                 |> equal json
-
-            #if !NETFRAMEWORK
-            testCase "Encode.Auto.toString works with [<StringEnum>]" <| fun _ ->
-                let expected = "\"firstPerson\""
-                let actual = Encode.Auto.toString(0, Camera.FirstPerson)
-                equalMultiline expected actual
-
-            testCase "Encode.Auto.toString works with [<StringEnum(CaseRules.LowerFirst)>]" <| fun _ ->
-                let expected = "\"react\""
-                let actual = Encode.Auto.toString(0, Framework.React)
-                equalMultiline expected actual
-
-            testCase "Encode.Auto.toString works with [<StringEnum(CaseRules.None)>]" <| fun _ ->
-                let expected = "\"Fsharp\""
-                let actual = Encode.Auto.toString(0, Language.Fsharp)
-                equalMultiline expected actual
-
-            testCase "Encode.Auto.toString works with [<StringEnum>] + [<CompiledName>]" <| fun _ ->
-                let expected = "\"C#\""
-                let actual = Encode.Auto.toString(0, Language.Csharp)
-                equalMultiline expected actual
-            #endif
 
             testCase "Encode.Auto.toString works with normal Enums" <| fun _ ->
                 let expected = "2"
@@ -741,6 +718,5 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
                 equalMultiline expected actual
             #endif
     *)
-#endif
       ]
     ]

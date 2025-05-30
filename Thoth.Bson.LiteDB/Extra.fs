@@ -5,7 +5,6 @@ let empty: ExtraCoders =
     { Hash = ""
       Coders = Map.empty }
 
-#if NYI
 let inline internal withCustomAndKey (encoder: Encoder<'Value>) (decoder: Decoder<'Value>)
            (extra: ExtraCoders): ExtraCoders =
     { extra with
@@ -26,5 +25,3 @@ let inline withDecimal (extra: ExtraCoders): ExtraCoders =
 
 let inline withBigInt (extra: ExtraCoders): ExtraCoders =
     withCustomAndKey Encode.bigint Decode.bigint extra
-
-#endif

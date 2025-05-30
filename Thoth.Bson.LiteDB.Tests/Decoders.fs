@@ -41,14 +41,12 @@ let tests : Test =
 
                 equalResult expected actual
 
-#if NYI
             testCase "invalid json #2 - Special case for Thoth.Json.Net" <| fun _ ->
                 // See: https://github.com/thoth-org/Thoth.Json.Net/issues/42
-                let expected : Result<MyUnion, string> = Error "Given an invalid JSON: Additional text encountered after finished reading JSON content: ,. Path '', line 1, position 5."
+                let expected : Result<MyUnion, string> = Error "Error at: `$`\nThe following `failure` occurred with the decoder: Expected array of length 2 but got 0"
                 let actual = Decode.Auto.fromString<MyUnion>(""""Foo","42"]""")
 
                 equalResult expected actual
-#endif
 
             testCase "invalid json #3 - Special case for Thoth.Json.Net" <| fun _ ->
                 // See: https://github.com/thoth-org/Thoth.Json.Net/pull/48
@@ -2519,7 +2517,6 @@ Expecting a boolean but instead got: "not_a_boolean"
                 equalResult expected actual
         ]
 
-#if NYI
         testList "Auto" [
             testCase "Auto.Decode.fromString works" <| fun _ ->
                 let now = DateTime.Now
@@ -2770,7 +2767,7 @@ Reason: Unkown value provided for the enum
                         """)
 
                 let res = Decode.Auto.fromString<Enum_Int8>("2")
-                equal value res
+                equalResult value res
 
             testCase "Auto decoders works for enum<uint8>" <| fun _ ->
                 let res = Decode.Auto.unsafeFromString<Enum_UInt8>("99")
@@ -2786,7 +2783,7 @@ Reason: Unkown value provided for the enum
                         """)
 
                 let res = Decode.Auto.fromString<Enum_UInt8>("2")
-                equal value res
+                equalResult value res
 
             testCase "Auto decoders works for enum<int16>" <| fun _ ->
                 let res = Decode.Auto.unsafeFromString<Enum_Int16>("99")
@@ -2802,7 +2799,7 @@ Reason: Unkown value provided for the enum
                         """)
 
                 let res = Decode.Auto.fromString<Enum_Int16>("2")
-                equal value res
+                equalResult value res
 
             testCase "Auto decoders works for enum<uint16>" <| fun _ ->
                 let res = Decode.Auto.unsafeFromString<Enum_UInt16>("99")
@@ -2818,7 +2815,7 @@ Reason: Unkown value provided for the enum
                         """)
 
                 let res = Decode.Auto.fromString<Enum_UInt16>("2")
-                equal value res
+                equalResult value res
 
             testCase "Auto decoders works for enum<int>" <| fun _ ->
                 let res = Decode.Auto.unsafeFromString<Enum_Int>("1")
@@ -2834,7 +2831,7 @@ Reason: Unkown value provided for the enum
                         """)
 
                 let res = Decode.Auto.fromString<Enum_Int>("4")
-                equal value res
+                equalResult value res
 
             testCase "Auto decoders works for enum<uint32>" <| fun _ ->
                 let res = Decode.Auto.unsafeFromString<Enum_UInt32>("99")
@@ -2850,7 +2847,7 @@ Reason: Unkown value provided for the enum
                         """)
 
                 let res = Decode.Auto.fromString<Enum_UInt32>("2")
-                equal value res
+                equalResult value res
 
     (*
             #if NETFRAMEWORK
@@ -2948,7 +2945,7 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
                         ""
                     with ex ->
                         ex.Message
-                errorMsg.Replace("+", ".") |> equalResult expected
+                errorMsg.Replace("+", ".") |> equal expected
 
             testCase "Auto.fromString works for Class marked as optional" <| fun _ ->
                 let json = """null"""
@@ -2968,7 +2965,7 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
                         ""
                     with ex ->
                         ex.Message
-                errorMsg.Replace("+", ".") |> equalResult expected
+                errorMsg.Replace("+", ".") |> equal expected
 
             testCase "Auto.fromString works for records missing an optional field" <| fun _ ->
                 let json = """{ "must": "must value"}"""
@@ -3067,7 +3064,7 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
                 let expected = NoAllocAttributeId (Guid.NewGuid())
                 let json = Encode.Auto.toString(4, expected)
                 let actual = Decode.Auto.unsafeFromString<NoAllocAttributeId>(json)
-                equalResult expected actual
+                equal expected actual
 
             testCase "Auto.unsafeFromString works with HTML inside of a string" <| fun _ ->
                 let expected =
@@ -3085,7 +3082,6 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
                     """
 
                 let actual : TestStringWithHTML = Decode.Auto.unsafeFromString(articleJson)
-                equalResult expected actual
+                equal expected actual
         ]
-#endif
     ]

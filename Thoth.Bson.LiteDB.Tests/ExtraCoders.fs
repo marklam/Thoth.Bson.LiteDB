@@ -7,7 +7,6 @@ type Data =
     { Id : int
       Text : string }
 
-#if NYI
 let camelCaseCoder = Extra.withCustom
                         (fun (c:Data) ->
                             Encode.object
@@ -36,11 +35,9 @@ type CachedCoder =
     static member internal decode<'Response>(value:string, ?caseStrategy:CaseStrategy, ?extra:ExtraCoders) =
         let decoder = Decode.Auto.generateDecoderCached<'Response>(?caseStrategy = caseStrategy, ?extra = extra)
         Decode.unsafeFromString decoder value
-#endif
 
 let tests : Test =
     testList "Thoth.Json.ExtraCoder" [
-#if NYI
         testList "Basic Tests (uncached)" [
             testCase "coder in camelCase works" <| fun _ ->
                 let data = {Id = 1; Text ="Text"}
@@ -195,5 +192,4 @@ let tests : Test =
                     CachedCoder.decode (json, caseStrategy = PascalCase)
                 equal expected actual
         ]
-#endif
     ]

@@ -279,7 +279,6 @@ type MyRecType =
     { Name: string
       Children: MyRecType List }
 
-#if NYI
 [<StringEnum>]
 type Camera =
     | FirstPerson
@@ -295,7 +294,6 @@ type Framework =
 type Language =
     | Fsharp
     | [<CompiledName("C#")>] Csharp
-#endif
 
 type Enum_Int8 =
     | Zero = 0y

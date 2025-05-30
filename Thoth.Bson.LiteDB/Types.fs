@@ -1,6 +1,28 @@
 namespace Thoth.Bson.LiteDB
 
 open System.Text.RegularExpressions
+open System
+
+
+type CaseRules =
+    | None = 0
+    /// FooBar -> fooBar
+    | LowerFirst = 1
+    /// FooBar -> foo_bar
+    | SnakeCase = 2
+    /// FooBar -> FOO_BAR
+    | SnakeCaseAllCaps = 3
+    /// FooBar -> foo-bar
+    | KebabCase = 4
+    /// FooBar -> foobar
+    | LowerAll = 5
+
+/// Compile union types as string literals.
+/// More info: https://fable.io/docs/communicate/js-from-fable.html#stringenum-attribute
+[<AttributeUsage(AttributeTargets.Class)>]
+type StringEnumAttribute(caseRules: CaseRules) =
+    inherit Attribute()
+    new() = StringEnumAttribute(CaseRules.LowerFirst)
 
 type JsonValue = LiteDB.BsonValue
 
@@ -33,7 +55,7 @@ type BoxedDecoder() =
 
 [<AbstractClass>]
 type BoxedEncoder() =
-    abstract Encode: value: obj -> JsonValue
+    abstract Encode: value: objnull -> JsonValue
     member this.BoxedEncoder: Encoder<obj> = this.Encode
 
 type ExtraCoders =

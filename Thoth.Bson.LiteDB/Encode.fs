@@ -339,7 +339,6 @@ module Encode =
     let toString (space: int) (token: JsonValue) : string =
         LiteDB.JsonSerializer.Serialize(token, space<>0)
 
-#if NYI
     //////////////////
     // Reflection ///
     ////////////////
@@ -377,35 +376,19 @@ module Encode =
                     |> Array.map (fun fi ->
                         let targetKey = Util.Casing.convert caseStrategy fi.Name
                         let encoder = autoEncoder extra caseStrategy skipNullField fi.PropertyType
-                        fun (source: obj) (target: JObject) ->
+                        fun (source: obj) (target: BsonDocument) ->
                             let value = FSharpValue.GetRecordField(source, fi)
                             if not skipNullField || (skipNullField && not (isNull value)) then // Discard null fields
                                 target.[targetKey] <- encoder.Encode value
                             target)
                 boxEncoder(fun (source: obj) ->
-                    (JObject(), setters) ||> Seq.fold (fun target set -> set source target) :> JsonValue)
+                    (BsonDocument(), setters) ||> Seq.fold (fun target set -> set source target) :> JsonValue)
             elif FSharpType.IsUnion(t, allowAccessToPrivateRepresentation=true) then
                 boxEncoder(fun (value: obj) ->
                     let info, fields = FSharpValue.GetUnionFields(value, t, allowAccessToPrivateRepresentation=true)
                     match fields.Length with
                     | 0 ->
-                        #if !NETFRAMEWORK
-                        match t with
-                        // Replicate Fable behavior when using StringEnum
-                        | Util.Reflection.StringEnum t ->
-                            match info with
-                            | Util.Reflection.CompiledName name -> string name
-                            | _ ->
-                                match t.ConstructorArguments with
-                                | Util.Reflection.LowerFirst ->
-                                    let name = info.Name.[..0].ToLowerInvariant() + info.Name.[1..]
-                                    string name
-                                | Util.Reflection.Forward -> string info.Name
-
-                        | _ -> string info.Name
-                        #else
                         string info.Name
-                        #endif
 
                     | len ->
                         let fieldTypes = info.GetFields()
@@ -467,7 +450,7 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
                     match keyType with
                     | StringifiableType toString ->
                         boxEncoder(fun (value: obj) ->
-                            let target = JObject()
+                            let target = BsonDocument()
                             for kv in value :?> System.Collections.IEnumerable do
                                 let k = kvProps.[0].GetValue(kv)
                                 let v = kvProps.[1].GetValue(kv)
@@ -547,7 +530,7 @@ If you can't use one of these types, please pass an extra encoder.
             // elif fullname = typeof<decimal>.FullName then
             //     boxEncoder decimal
             elif fullname = typeof<System.DateTime>.FullName then
-                boxEncoder datetime
+                boxEncoder datetimeUtc
             elif fullname = typeof<System.DateTimeOffset>.FullName then
                 boxEncoder datetimeOffset
             elif fullname = typeof<System.TimeSpan>.FullName then
@@ -605,8 +588,6 @@ If you can't use one of these types, please pass an extra encoder.
 
         static member toString(value : 'T, ?caseStrategy : CaseStrategy, ?extra: ExtraCoders, ?skipNullField: bool) : string =
             Auto.toString(0, value, ?caseStrategy=caseStrategy, ?extra=extra, ?skipNullField=skipNullField)
-
-#endif
 
     ///**Description**
     /// Convert a `Value` into a prettified string.

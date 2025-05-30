@@ -186,7 +186,7 @@ module Decode =
 
     let unit : Decoder<unit> =
         fun path value ->
-            if Helpers.isNullValue value then
+            if (Helpers.isNullValue value) || (Helpers.isUndefined value) then
                 Ok ()
             else
                 (path, BadPrimitive("null", value)) |> Error
@@ -351,7 +351,7 @@ module Decode =
     let datetimeUtc : Decoder<System.DateTime> =
         fun path token ->
             if Helpers.isDate token then
-                token.AsDateTime |> Ok
+                token.AsDateTime.ToUniversalTime() |> Ok
             else if Helpers.isString token then
                 match System.DateTime.TryParse (Helpers.asString token) with
                 | true, x -> x.ToUniversalTime() |> Ok
@@ -374,7 +374,7 @@ module Decode =
     let datetimeOffset : Decoder<System.DateTimeOffset> =
         fun path token ->
             if Helpers.isDate token then
-                token.AsDateTime |> System.DateTimeOffset |> Ok
+                token.AsDateTime.ToUniversalTime() |> System.DateTimeOffset |> Ok
             elif Helpers.isString token then
                 match System.DateTimeOffset.TryParse (Helpers.asString token, CultureInfo.InvariantCulture, DateTimeStyles.None) with
                 | true, x -> Ok x
@@ -1060,7 +1060,6 @@ module Decode =
                 |> succeed
             )
 
-#if NYI
     //////////////////
     // Reflection ///
     ////////////////
@@ -1114,7 +1113,7 @@ module Decode =
     let private genericOption t (decoder: BoxedDecoder) =
         let ucis = FSharpType.GetUnionCases(t)
         fun (path : string) (value: JsonValue) ->
-            if Helpers.isNullValue value then
+            if  (Helpers.isNullValue value) || (Helpers.isUndefined value) then
                 Ok (FSharpValue.MakeUnion(ucis.[0], [||]))
             else
                 decoder.Decode(path, value)
@@ -1125,7 +1124,7 @@ module Decode =
             if not (Helpers.isArray value) then
                 (path, BadPrimitive ("a list", value)) |> Error
             else
-                let values = value.Value<JArray>()
+                let values = value.AsArray
                 let ucis = FSharpType.GetUnionCases(t, allowAccessToPrivateRepresentation=true)
                 let empty = FSharpValue.MakeUnion(ucis.[0], [||], allowAccessToPrivateRepresentation=true)
                 (values, Ok empty) ||> Seq.foldBack (fun value acc ->
@@ -1195,14 +1194,14 @@ module Decode =
             let empty = System.Activator.CreateInstance(listType)
             let kvs =
                 if Helpers.isArray value then
-                    (Ok empty, value.Value<JArray>()) ||> Seq.fold (fun acc value ->
+                    (Ok empty, value.AsArray) ||> Seq.fold (fun acc value ->
                         match acc with
                         | Error _ -> acc
                         | Ok acc ->
                             if not (Helpers.isArray value) then
                                 (path, BadPrimitive ("an array", value)) |> Error
                             else
-                                let kv = value.Value<JArray>()
+                                let kv = value.AsArray
                                 match keyDecoder.Decode(path + "[0]", kv.[0]), valueDecoder.Decode(path + "[1]", kv.[1]) with
                                 | Error er, _ -> Error er
                                 | _, Error er -> Error er
@@ -1212,15 +1211,15 @@ module Decode =
                 else
                     match keyType with
                     | StringifiableType ofString when Helpers.isObject value ->
-                        (Ok empty, value :?> JObject |> Seq.cast<JProperty>)
+                        (Ok empty, value.AsDocument.GetElements())
                         ||> Seq.fold (fun acc prop ->
                             match acc with
                             | Error _ -> acc
                             | Ok acc ->
-                                match valueDecoder.Decode(path + "." + prop.Name, prop.Value) with
+                                match valueDecoder.Decode(path + "." + prop.Key, prop.Value) with
                                 | Error er -> Error er
                                 | Ok v ->
-                                    addMethod.Invoke(acc, [|FSharpValue.MakeTuple([|ofString prop.Name; v|], tupleType)|]) |> ignore
+                                    addMethod.Invoke(acc, [|FSharpValue.MakeTuple([|ofString prop.Key; v|], tupleType)|]) |> ignore
                                     Ok acc)
                     | _ ->
                         (path, BadPrimitive ("an array or an object", value)) |> Error
@@ -1230,26 +1229,7 @@ module Decode =
         let uci =
             FSharpType.GetUnionCases(t, allowAccessToPrivateRepresentation=true)
             |> Array.tryFind (fun uci ->
-                #if !NETFRAMEWORK
-                match t with
-                | Util.Reflection.StringEnum t ->
-                    match uci with
-                    | Util.Reflection.CompiledName name ->
-                        name = searchedName
-
-                    | _ ->
-                        match t.ConstructorArguments with
-                        | Util.Reflection.LowerFirst ->
-                            let adaptedName = uci.Name.[..0].ToLowerInvariant() + uci.Name.[1..]
-                            adaptedName = searchedName
-
-                        | Util.Reflection.Forward ->
-                            uci.Name = searchedName
-                | _ ->
-                    uci.Name = searchedName
-                #else
                 uci.Name = searchedName
-                #endif
             )
 
         match uci with
@@ -1427,7 +1407,11 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
             elif fullname = typeof<obj>.FullName then
                 boxDecoder (fun _ v ->
                     if Helpers.isNullValue v then Ok(null: obj)
-                    else v.Value<obj>() |> Ok)
+                    else
+                        failwithf """Cannot generate auto decoder for %s. Please pass an extra decoder.
+
+Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation/auto/extra-coders.html#ready-to-use-extra-coders""" t.FullName
+                    )
             else autoDecodeRecordsAndUnions extra caseStrategy isOptional t
 
     let private makeExtra (extra: ExtraCoders option) =
@@ -1489,4 +1473,3 @@ Documentation available at: https://thoth-org.github.io/Thoth.Json/documentation
             match fromString decoder json with
             | Ok x -> x
             | Error msg -> failwith msg
-#endif
